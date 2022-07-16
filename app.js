@@ -30,10 +30,6 @@ app.get('/', (req, res) => {
     res.render("index.hbs")
 })
 
-app.listen(3000, () => {
-    console.log("app listening on port 3000");
-})
-
 app.get('/getdb', async (req, res) => {
     console.log(JSON.stringify(sql))
     try {
@@ -45,6 +41,11 @@ app.get('/getdb', async (req, res) => {
         console.log('error!!!', e)
     }
 })
+
+app.listen(port, () => {
+    console.log("app listening on port 3000");
+})
+
 
 // AWS HOSTED APP
 // http://node1-env.eba-3pukpgtq.us-east-1.elasticbeanstalk.com
