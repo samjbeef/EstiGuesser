@@ -7,7 +7,8 @@ const dotenv = require('dotenv');
 
 dotenv.config()
 
-const sql = postgres(`postgres://${process.env.RDS_DATABASE_User}:${process.env.RDS_DATABASE_Password}@${process.env.RDS_DATABASE_Host}:${process.env.RDS_DATABASE_Port}/${process.env.RDS_DATABASE}`, {
+const connString = `postgres://${process.env.RDS_DATABASE_User}:${process.env.RDS_DATABASE_Password}@${process.env.RDS_DATABASE_Host}:${process.env.RDS_DATABASE_Port}/${process.env.RDS_DATABASE}`
+const sql = postgres(connString, {
     password: process.env.RDS_DATABASE_Password,
     user: process.env.RDS_DATABASE_User,
     host: process.env.RDS_DATABASE_Host,
@@ -32,6 +33,7 @@ app.get('/', (req, res) => {
 
 app.get('/getdb', async (req, res) => {
     console.log(JSON.stringify(sql))
+    console.log(connString)
     try {
         console.log("shit fuck cock balls")
         const s = await sql`select 1`
