@@ -1,92 +1,50 @@
+const path = require('path');
 const { json } = require('express');
 const express = require('express');
-const mariadb = require('mariadb');
-const Zillow = require('node-zillow')
+const postgres = require('postgres');
+const dotenv = require('dotenv');
+//const Zillow = require('node-zillow');
+
+dotenv.config()
+
+const sql = postgres(`postgres://${process.env.RDS_DATABASE_User}:${process.env.RDS_DATABASE_Password}@${process.env.RDS_DATABASE_Host}:${process.env.RDS_DATABASE_Port}/${process.env.RDS_DATABASE}`, {
+    password: process.env.RDS_DATABASE_Password,
+    user: process.env.RDS_DATABASE_User,
+    host: process.env.RDS_DATABASE_Host,
+    port: process.env.RDS_DATABASE_Port
+})
+
+dotenv.config({ path: './.env' });
 
 const app = express();
 const port = process.env.port || 3000;
 app.use(express.json())
-var pool =
-    mariadb.createPool({
-        host: '127.0.0.1',
-        port: 3306,
-        user: 'root',
-        password: '1818',
-        database: 'js-Estiguessr'
-    });
+//var zwsid = 'X1-ZWz1irozd8ydjf_5886x'
+//var zillow = new Zillow(zwsid)
 
-var zwsid = 'X1-ZWz1irozd8ydjf_5886x'
-var zillow = new Zillow(zwsid)
-
-var parameters = {
-    zpid: 1111111
-};
-
-// // http://node1-env.eba-3pukpgtq.us-east-1.elasticbeanstalk.com
-// // To start from terminal: node app.js
+const publicDirectory = path.join(__dirname, './public');
+app.use(express.static(publicDirectory));
+app.set('View Engine', 'hbs');
 
 app.get('/', (req, res) => {
-    console.log("/");
-    res.send("happy fathers day daddddddd eooohoooo");
+    res.render("index.hbs")
 })
 
-
-app.get('/test', (req, res) => {
-    console.log("/test");
-    path = require('path');
-    var x = path.join(__dirname, 'web.html');
-
-    res.sendFile(x);
-    // res.sendFile('/Users/samsliefert/Documents/Coding/Starter/web.html');
+app.listen(3000, () => {
+    console.log("app listening on port 3000");
 })
 
-app.get('/main', (req, res) => {
-    console.log("/main");
-    path = require('path');
-    var x = path.join(__dirname, 'main.html');
-
-    res.sendFile(x);
-    // res.sendFile('/Users/samsliefert/Documents/Coding/Starter/web.html');
-})
-app.get('/signIn', (req, res) => {
-    console.log("/signIn");
-    path = require('path');
-    var x = path.join(__dirname, 'signIn.html');
-
-    res.sendFile(x);
-    // res.sendFile('/Users/samsliefert/Documents/Coding/Starter/web.html');
-})
-app.get('/sam', (req, res) => {
-    console.log("/sam");
-    res.json({ Hello: "world", myNumber: 4 });
-})
-
-function revealMessage() {
-    document.getElementById("hiddenMessage").style.display = 'block';
-}
-
-app.listen(port, () => {
-    console.log("WHATSUPPPPP");
-});
-
-app.post('/dbwrite', async (req, res) => {
-
-    let conn;
+app.get('/getdb', async (req, res) => {
+    console.log(JSON.stringify(sql))
     try {
-
-        conn = await pool.getConnection();
-        const rows = await conn.query("SELECT 1 as val");
-        console.log(JSON.stringify(rows));
-        // rows: [ {val: 1}, meta: ... ]
-
-        const res = await conn.query("INSERT INTO first_table value (?, ?, ?)", [1, "mariadb", 5]);
-        // res: { affectedRows: 1, insertId: 1, warningStatus: 0 }
-
+        console.log("shit fuck cock balls")
+        const s = await sql`select 1`
+        console.log(s)
+        res.send(s)
     } catch (e) {
-        console.log(e);
-    }
-
-    finally {
-        if (conn) conn.release(); //release to pool
+        console.log('error!!!', e)
     }
 })
+
+// AWS HOSTED APP
+// http://node1-env.eba-3pukpgtq.us-east-1.elasticbeanstalk.com
