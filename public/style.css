@@ -1,3 +1,4 @@
-body {
-    background-color: orange;
-}
+ body {
+     background-image: url("housePic.jpg");
+     background-size: 100%;
+ }
