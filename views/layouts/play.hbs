@@ -33,11 +33,16 @@
         </div>
     </center>
     <center>
-        <form action="/guess" method="POST">
+        <form action="/check-guess" method="POST">
+            <input type="hidden" name="targetNumber" value="{{targetNumber}}">
             <h1>Enter your Estimate Below!</h1></br>
-            <input type="number" name="testfield" />
+            <input type="number" name="userInput" />
             <input type="submit" value="submit">
         </form>
+    </center>    
+    <center> 
+        <br></br>               
+        <h1><p>{{message}}</p></h1>
     </center>
     <center>
         <h1>{{ stuff }}</h1>
