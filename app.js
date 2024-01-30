@@ -12,14 +12,7 @@ const { request } = require('http');
 var requestIp = require('request-ip');
 const { Pool } = require('pg');
 
-//const { TwitterApi } = require('twitter-api-v2');
-//const Zillow = require('node-zillow');
 
-//Setting default layout and extension name
-// app.engine('hbs', exphbs.engine({
-//     defaultLayout: 'index',
-//     extname: '.hbs'
-// }));
 let options = {
     dotfiles: "ignore", //allow, deny, ignore
     etag: true,
@@ -48,26 +41,6 @@ app.set('view engine', 'hbs');
 //getting input from user
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// app.get('/', function (request, response) {
-
-//     var clientIp = requestIp.getClientIp(request);
-//     console.log(clientIp);
-
-// });
-
-/*dotenv.config()
-
-const connString = `postgres://${process.env.RDS_DATABASE_User}:${process.env.RDS_DATABASE_Password}@${process.env.RDS_DATABASE_Host}:${process.env.RDS_DATABASE_Port}/${process.env.RDS_DATABASE}`
-const sql = postgres(connString, {
-    password: process.env.RDS_DATABASE_Password,
-    user: process.env.RDS_DATABASE_User,
-    host: process.env.RDS_DATABASE_Host,
-    port: process.env.RDS_DATABASE_Port
-})
-*/
-//REPLACED WITH CONNECTION POOLING BELOW
-//dotenv.config({ path: './.env' });
-
 require('dotenv').config({
     override: true,
     path: path.join(__dirname, '.env')
@@ -87,79 +60,90 @@ app.use(express.urlencoded({ extended: true }));
 const maxChances = 3; // Set the maximum number of chances
 let remainingChances = maxChances; // Initialize the remaining 
 let targetNumber;
+let bestScore = 0;
 
 
 
-//Tweaked the guess handler to include the guessing game logic
+const fetchRealEstateData = async () => {
+    const options = {
+        method: 'GET',
+        url: 'https://zillow-working-api.p.rapidapi.com/pro/byzpid',
+        params: { zpid: '75670062' },
+        headers: {
+            'X-RapidAPI-Key': '',
+            'X-RapidAPI-Host': 'zillow-working-api.p.rapidapi.com',
+        },
+    };
 
-/*app.post('/guess', async (req, res) => {
-    console.log(JSON.stringify(req.body.testfield));
-    var user_input = JSON.stringify(req.body.testfield);
-    console.log(user_input);
-    var user_input = user_input.replaceAll('"', '');
-    console.log(user_input);
-    // res.render("./layouts/play.hbs", { name: "testfield" });
-    console.log(JSON.stringify(sql));
-    console.log(connString);
-    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/307
-    res.redirect(303, `/play?user_input=${user_input}`) // https://stackoverflow.com/questions/38810114/node-js-with-express-how-to-redirect-a-post-request
-    // console.log(JSON.stringify(req.body.testfield));
     try {
-        console.log("shit fuck cock balls")
-        const s = await sql`INSERT INTO test_1 (column1,column2,column3) VALUES ('hello', 'twins', ${user_input})`
-        console.log(s)
-        // res.send(s)
-    } catch (e) {
-        console.log('error!!!', e)
+        const response = await axios.request(options);
+
+        // Extract necessary data for rendering
+        const propertyDetails = response.data.propertyDetails;
+        const address = propertyDetails.address;
+        const price = propertyDetails.price;
+        const yearBuilt = propertyDetails.yearBuilt;
+        const photos = propertyDetails.originalPhotos || [];
+
+        // Store the address and price in a global variable for later use
+        global.addressDetails = { photos, address, price, yearBuilt };
+    } catch (error) {
+        console.error(error);
+        throw error;
     }
-    // app.get('/play', (req, res) => {
-    //     res.render('play', {
-    //         stuff: ""
-    //     })
-    // });
-});
-*/
+};
 
 app.post('/check-guess', async (req, res) => {
     const userGuess = parseInt(req.body.userInput);
     const client = await pool.connect();
+    const { address, price, yearBuilt, photos } = global.addressDetails || {};
 
     try {
-        const { rows } = await client.query('SELECT price FROM test_1');
-        if (rows.length > 0) {
-            const result = rows[0];
-            const correctGuess = userGuess === targetNumber
-            targetNumber = result.price;
+        const correctGuess = userGuess === price;
+        targetNumber = price;
 
-            let message = ''; // Initialize an empty message
+        let message = ''; // Initialize an empty message
 
-            if (correctGuess) {
-                const points = (maxChances - remainingChances) + 1;
-                message = `Congratulations! You guessed the correct price in ${points} tries.`;
+        if (correctGuess) {
+            const tries = (maxChances - remainingChances) + 1;
+            
+            //TODO: Add scoring algorithm
+            /*const priceDifference = Math.abs(price - userGuess);
+            const points = Math.round(Math.max(0, 100 - (priceDifference / price) * 100));
 
-                return res.render('./layouts/play.hbs', {
-                    message,
-                    userGuess: userGuess,
-                    showPlayAgain: true
-                });
-            } else {
-                remainingChances--;
-
-                if (remainingChances === 0) {
-                    message = 'You are out of chances. Game over!';
-
-                } else if (userGuess < targetNumber) {
-                    message = `Try a higher number. Chances remaining: ${remainingChances}`;
-                } else {
-                    message = `Try a lower number. Chances remaining: ${remainingChances}`;
-                }
+            if (points > bestScore) {
+                bestScore = points; // Update the best score if the current score is higher
             }
-            res.redirect(`/play?message=${encodeURIComponent(message)}&user_input=${userGuess}`);
 
+            You score is${points}!
+            */
+
+            message = `Congratulations! You guessed the correct price in ${tries} tries.`;
+            
+            return res.render('./layouts/play.hbs', {
+                message,
+                userGuess: userGuess,
+                showPlayAgain: true,
+                //bestScore,
+                price,
+                address, 
+                yearBuilt,
+                photos
+            });
         } else {
-            console.error('No data found in the result set.');
-            res.status(500).send('Internal Server Error');
+            remainingChances--;
+
+            if (remainingChances === 0) {
+                message = 'You are out of chances. Game over!';                
+
+            } else if (userGuess < targetNumber) {
+                message = `Try a higher number. Chances remaining: ${remainingChances}`;
+            } else {
+                message = `Try a lower number. Chances remaining: ${remainingChances}`;
+            }
         }
+        res.redirect(`/play?message=${encodeURIComponent(message)}&user_input=${userGuess}`);
+
     } catch (error) {
         console.error('Error retrieving the target number from the database:', error);
         res.status(500).send('Internal Server Error');
@@ -168,57 +152,43 @@ app.post('/check-guess', async (req, res) => {
     }
 });
 
-// const client = new TwitterApi({
-//     appKey: 'Twitter_API_Key',
-//     appSecret: 'Twitter_API_Key_Secret',
-//     accessToken: 'Twitter_Bearer_Token',
-// });
-
-// client.v2.singleTweet('1455477974489251841', {
-//     'tweet.fields': [
-//         'organic_metrics',
-//     ],
-// }).then((val) => {
-//     console.log(val)
-// }).catch((err) => {
-//     console.log(err)
-// })
-
-
-//const app = express();
 const port = process.env.port || 3000;
 app.use(express.json())
-// app.set("view options", { layout: '.' })
 
-
-// var zwsid = Zillow_API_Key
-// var zillow = new Zillow(zwsid)
 console.log(__dirname);
 const publicDirectory = path.join(__dirname, './public');
 
-app.get('/', (req, res) => {
+/*app.get('/', (req, res) => {
     remainingChances = 3;
     targetNumber = undefined;
     res.render("./layouts/index.hbs")
 })
+*/
 
-// app.get('/getdb', async (req, res) => {
-//     console.log(JSON.stringify(sql))
-//     console.log(connString)
-//     // console.log(JSON.stringify(req.body.testfield));
-//     try {
-//         console.log("")
-//         const s = await sql`INSERT INTO test_1 (column1,column2,column3) VALUES ('hello', 'twins', '1234534')`
-//         console.log(s)
-//         res.send(s)
-//     } catch (e) {
-//         console.log('error!!!', e)
-//     }
-// })
+app.get('/', async (req, res) => {
+    try {
+        remainingChances = 3;
+        targetNumber = undefined;
+        
+        // Fetch real estate data
+        await fetchRealEstateData();
+
+        res.render('./layouts/index.hbs', {
+            address: global.addressDetails.address,
+            price: global.addressDetails.price,
+            yearBuilt: global.addressDetails.yearBuilt,
+            photos: global.addressDetails.photos            
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Internal Server Error');
+    }
+});
 
 app.get('/play', (request, response) => {
     console.log('JSON.stringify(request.body)')
     console.log(JSON.stringify(request.body))
+    const { address, price, yearBuilt, photos } = global.addressDetails || {};
     const message = request.query.message || ''; // Retrieve the message from the query parameter
     const user_input = request.body.user_input || request.params.user_input
     const remainingChancesEqualsZero = remainingChances === undefined || remainingChances === 0;
@@ -230,11 +200,28 @@ app.get('/play', (request, response) => {
             style: 'currency',
             currency: 'USD',
         });
+
+        //TODO: Add score logic
+        // Calculate the score
+        /*const priceDifference = Math.abs(price - correctGuess);
+        const score = Math.round(Math.max(0, 100 - (priceDifference / price) * 100));
+
+        // Update the best score if the current score is higher
+        if (score > bestScore) {
+            bestScore = score;
+        }
+        Your score is ${score}.
+
+        */
         response.render('./layouts/play.hbs', {
             message: `The correct price was ${formattedCorrectGuess}.`,
             user_input,
             remainingChancesEqualsZero,
-            showPlayAgain: true
+            showPlayAgain: true,
+            address,
+            price, 
+            yearBuilt, 
+            photos
         });
 
     } else {
@@ -242,7 +229,11 @@ app.get('/play', (request, response) => {
         response.render('./layouts/play.hbs', {
             message,
             stuff: JSON.stringify(user_input),
-            remainingChancesEqualsZero
+            remainingChancesEqualsZero,
+            address,
+            price,
+            yearBuilt, 
+            photos
         });
     }
 });
@@ -250,7 +241,3 @@ app.get('/play', (request, response) => {
 app.listen(port, () => {
     console.log("app listening on port 3000");
 })
-
-
-// AWS HOSTED APP
-// http://node1-env.eba-3pukpgtq.us-east-1.elasticbeanstalk.com
