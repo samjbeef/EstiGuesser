@@ -69,17 +69,17 @@ const sql = postgres(connString, {
 //dotenv.config({ path: './.env' });
 
 require('dotenv').config({
-  override: true,
-  path: path.join(__dirname, '.env')
+    override: true,
+    path: path.join(__dirname, '.env')
 });
 
 const pool = new Pool({
-  user: process.env.RDS_DATABASE_User,
-  host: process.env.RDS_DATABASE_Host,
-  database: process.env.RDS_DATABASE,
-  password: process.env.RDS_DATABASE_Password,
-  port: process.env.RDS_DATABASE_Port
-  });  
+    user: process.env.RDS_DATABASE_User,
+    host: process.env.RDS_DATABASE_Host,
+    database: process.env.RDS_DATABASE,
+    password: process.env.RDS_DATABASE_Password,
+    port: process.env.RDS_DATABASE_Port
+});
 
 
 //Middleware for parsing URL-encoded data in the body of incoming requests
@@ -87,6 +87,7 @@ app.use(express.urlencoded({ extended: true }));
 const maxChances = 3; // Set the maximum number of chances
 let remainingChances = maxChances; // Initialize the remaining 
 let targetNumber;
+
 
 
 //Tweaked the guess handler to include the guessing game logic
@@ -113,54 +114,59 @@ let targetNumber;
     }
     // app.get('/play', (req, res) => {
     //     res.render('play', {
-    //         stuff: "Fucking hell"
+    //         stuff: ""
     //     })
     // });
 });
 */
 
 app.post('/check-guess', async (req, res) => {
-  const userGuess = parseInt(req.body.userInput);
-  const client = await pool.connect();
+    const userGuess = parseInt(req.body.userInput);
+    const client = await pool.connect();
 
-  try {
-      const { rows } = await client.query('SELECT price FROM test_1');
-      if (rows.length > 0) {
-          const result = rows[0];
-          targetNumber = result.price;
+    try {
+        const { rows } = await client.query('SELECT price FROM test_1');
+        if (rows.length > 0) {
+            const result = rows[0];
+            const correctGuess = userGuess === targetNumber
+            targetNumber = result.price;
 
-          let message = ''; // Initialize an empty message
+            let message = ''; // Initialize an empty message
 
-          if (userGuess === targetNumber) {
+            if (correctGuess) {
                 const points = (maxChances - remainingChances) + 1;
-                message = `Congratulations! You guessed the correct price in ${points} tries.`;                
-          } else {
-              remainingChances--;
+                message = `Congratulations! You guessed the correct price in ${points} tries.`;
 
-              if (remainingChances === 0) {
-                  message = 'You are out of chances. Game over!';
-              } else if (userGuess < targetNumber) {
-                  message = `Try a higher number. Chances remaining: ${remainingChances}`;
-              } else {
-                  message = `Try a lower number. Chances remaining: ${remainingChances}`;
-              }
-          }
-          
+                return res.render('./layouts/play.hbs', {
+                    message,
+                    userGuess: userGuess,
+                    showPlayAgain: true
+                });
+            } else {
+                remainingChances--;
+
+                if (remainingChances === 0) {
+                    message = 'You are out of chances. Game over!';
+
+                } else if (userGuess < targetNumber) {
+                    message = `Try a higher number. Chances remaining: ${remainingChances}`;
+                } else {
+                    message = `Try a lower number. Chances remaining: ${remainingChances}`;
+                }
+            }
             res.redirect(`/play?message=${encodeURIComponent(message)}&user_input=${userGuess}`);
-        
-      } else {
-          console.error('No data found in the result set.');
-          res.status(500).send('Internal Server Error');
-      }
-  } catch (error) {
-      console.error('Error retrieving the target number from the database:', error);
-      res.status(500).send('Internal Server Error');
-  } finally {
-      client.release();
-  }
+
+        } else {
+            console.error('No data found in the result set.');
+            res.status(500).send('Internal Server Error');
+        }
+    } catch (error) {
+        console.error('Error retrieving the target number from the database:', error);
+        res.status(500).send('Internal Server Error');
+    } finally {
+        client.release();
+    }
 });
-
-
 
 // const client = new TwitterApi({
 //     appKey: 'Twitter_API_Key',
@@ -191,6 +197,8 @@ console.log(__dirname);
 const publicDirectory = path.join(__dirname, './public');
 
 app.get('/', (req, res) => {
+    remainingChances = 3;
+    targetNumber = undefined;
     res.render("./layouts/index.hbs")
 })
 
@@ -199,7 +207,7 @@ app.get('/', (req, res) => {
 //     console.log(connString)
 //     // console.log(JSON.stringify(req.body.testfield));
 //     try {
-//         console.log("shit fuck cock balls")
+//         console.log("")
 //         const s = await sql`INSERT INTO test_1 (column1,column2,column3) VALUES ('hello', 'twins', '1234534')`
 //         console.log(s)
 //         res.send(s)
@@ -213,28 +221,30 @@ app.get('/play', (request, response) => {
     console.log(JSON.stringify(request.body))
     const message = request.query.message || ''; // Retrieve the message from the query parameter
     const user_input = request.body.user_input || request.params.user_input
-
+    const remainingChancesEqualsZero = remainingChances === undefined || remainingChances === 0;
     // Check if remaining chances are zero
-    if (remainingChances === 0) {
-      // Display the correct guess message here
-      const correctGuess = targetNumber; // Get the correct guess from targetNumber
-      const formattedCorrectGuess = correctGuess.toLocaleString('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    });
-    response.render('./layouts/play.hbs', {
-      message: `The correct price was ${formattedCorrectGuess}.`, // Append the correct guess to the existing message
-      user_input
-    });
-    
+    if (remainingChancesEqualsZero) {
+        // Display the correct guess message here
+        const correctGuess = targetNumber || 0; // Get the correct guess from targetNumber
+        const formattedCorrectGuess = correctGuess.toLocaleString('en-US', {
+            style: 'currency',
+            currency: 'USD',
+        });
+        response.render('./layouts/play.hbs', {
+            message: `The correct price was ${formattedCorrectGuess}.`,
+            user_input,
+            remainingChancesEqualsZero,
+            showPlayAgain: true
+        });
 
-  } else {
-    // Display the regular game interface with the message
-    response.render('./layouts/play.hbs', {
-        message,
-        stuff: JSON.stringify(user_input)
-    });
-  }
+    } else {
+        // Display the regular game interface with the message
+        response.render('./layouts/play.hbs', {
+            message,
+            stuff: JSON.stringify(user_input),
+            remainingChancesEqualsZero
+        });
+    }
 });
 
 app.listen(port, () => {
