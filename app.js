@@ -11,6 +11,7 @@ const { stringify } = require('querystring');
 const { request } = require('http');
 var requestIp = require('request-ip');
 const { Pool } = require('pg');
+dotenv.config()
 
 
 let options = {
@@ -70,7 +71,7 @@ const fetchRealEstateData = async () => {
         url: 'https://zillow-working-api.p.rapidapi.com/pro/byzpid',
         params: { zpid: '75670062' },
         headers: {
-            'X-RapidAPI-Key': '',
+            'X-RapidAPI-Key': '63f40f9d1emsh674f475b71f0f17p174a6fjsn88f33fbb2dfd',
             'X-RapidAPI-Host': 'zillow-working-api.p.rapidapi.com',
         },
     };
@@ -106,7 +107,7 @@ app.post('/check-guess', async (req, res) => {
 
         if (correctGuess) {
             const tries = (maxChances - remainingChances) + 1;
-            
+
             //TODO: Add scoring algorithm
             /*const priceDifference = Math.abs(price - userGuess);
             const points = Math.round(Math.max(0, 100 - (priceDifference / price) * 100));
@@ -119,14 +120,14 @@ app.post('/check-guess', async (req, res) => {
             */
 
             message = `Congratulations! You guessed the correct price in ${tries} tries.`;
-            
+
             return res.render('./layouts/play.hbs', {
                 message,
                 userGuess: userGuess,
                 showPlayAgain: true,
                 //bestScore,
                 price,
-                address, 
+                address,
                 yearBuilt,
                 photos
             });
@@ -134,7 +135,7 @@ app.post('/check-guess', async (req, res) => {
             remainingChances--;
 
             if (remainingChances === 0) {
-                message = 'You are out of chances. Game over!';                
+                message = 'You are out of chances. Game over!';
 
             } else if (userGuess < targetNumber) {
                 message = `Try a higher number. Chances remaining: ${remainingChances}`;
@@ -169,7 +170,7 @@ app.get('/', async (req, res) => {
     try {
         remainingChances = 3;
         targetNumber = undefined;
-        
+
         // Fetch real estate data
         await fetchRealEstateData();
 
@@ -177,7 +178,7 @@ app.get('/', async (req, res) => {
             address: global.addressDetails.address,
             price: global.addressDetails.price,
             yearBuilt: global.addressDetails.yearBuilt,
-            photos: global.addressDetails.photos            
+            photos: global.addressDetails.photos
         });
     } catch (error) {
         console.error(error);
@@ -219,8 +220,8 @@ app.get('/play', (request, response) => {
             remainingChancesEqualsZero,
             showPlayAgain: true,
             address,
-            price, 
-            yearBuilt, 
+            price,
+            yearBuilt,
             photos
         });
 
@@ -232,7 +233,7 @@ app.get('/play', (request, response) => {
             remainingChancesEqualsZero,
             address,
             price,
-            yearBuilt, 
+            yearBuilt,
             photos
         });
     }
