@@ -71,7 +71,7 @@ const fetchRealEstateData = async () => {
         url: 'https://zillow-working-api.p.rapidapi.com/pro/byzpid',
         params: { zpid: '75670062' },
         headers: {
-            'X-RapidAPI-Key': '63f40f9d1emsh674f475b71f0f17p174a6fjsn88f33fbb2dfd',
+            'X-RapidAPI-Key': process.env.API_KEY,
             'X-RapidAPI-Host': 'zillow-working-api.p.rapidapi.com',
         },
     };
