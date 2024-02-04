@@ -7,31 +7,46 @@
     <title>Bootstrap demo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
-    <link rel="stylesheet" href="play.css">    
+    <link rel="stylesheet" href="play.css">
 </head>
 
 <body>
+    <style>
+        h1 {
+            font-size: 30px;
+        }
+    </style>
+
     <center>
-        <h1>Here are images of a property recently sold in the United States.
-            You will be given the state and guess the price of the property.
-            Your score will be based on your strength of guess. Press begin to start.
+        <h1>Here are images of a property recently sold in the United States with the address and year given below.
+            You will be given three chances to guess the price of the property.
+            Your score will be based on your strength of guess.
         </h1>
     </center>
+
     <center>
-        <div style="height:320px;width:460px;overflow:scroll;">
-            <a target="_blank" href="#">
-                <img src="house1.png" alt=" Sample image">
-            </a>
-            <br>
-            <a target="_blank" href="#">
-                <img src="house2.png" alt="Sample image">
-            </a>
-            <br>
-            <a target="_blank" href="#">
-                <img src="house3.png" alt="Sample image">
-            </a>
+        <div style="height:400px;width:800px;overflow:scroll;">
+            {{#if photos}}
+            {{#each photos}}
+            <img src="{{this.mixedSources.jpeg.[0].url}}" width="{{this.mixedSources.jpeg.[0].width}}" alt="Photo">
+            {{/each}}
+            {{else}}
+            <p>No photos available.</p>
+            {{/if}}
         </div>
     </center>
+
+    <center>
+        <h1>
+            <p>Address: {{address.streetAddress}}. {{address.city}}, {{address.state}}</p>
+        </h1>
+        <h1>
+            <p>Year Built: {{yearBuilt}}</p>
+        </h1>
+    </center>
+
+    <p>Price: {{price}}</p>
+
     <center>
         <form action="/check-guess" method="POST">
             <input type="hidden" name="targetNumber" value="{{targetNumber}}">
@@ -39,29 +54,31 @@
             <input type="number" name="userInput" />
             <input type="submit" value="submit">
         </form>
-    </center>    
-    <center> 
-        <br></br>               
-        <h1><p>{{message}}</p></h1>
-    </center> 
-    
+    </center>
+    <center>
+        <br></br>
+        <h1>
+            <p>{{message}}</p>
+        </h1>
+    </center>
+
     <center>
         <h1>{{ stuff }}</h1>
     </center>
-    
-    <center>
-    <!-- Conditionally show the "Play Again" button -->    
-    {{#if showPlayAgain}}
-        <form action="/" method="GET">
-            <input type="submit" value="Play Again" onclick="redirectToHome()">
-        </form>        
-    {{/if}}    
-</center>
-<script>
-    function redirectToHome(){
-        //redirect to home page when button is clicked        
-        window.location.href = "/";
-    }
-</script>
 
+    <center>
+        <!-- Conditionally show the "Play Again" button -->
+        {{#if showPlayAgain}}
+        <form action="/?reset=true" method="GET">
+            <input type="submit" value="Play Again" onclick="redirectToHome(event)">
+        </form>
+        {{/if}}
+    </center>
+    <script>
+        function redirectToHome(event) {
+            //redirect to home page when button is clicked    
+            event.preventDefault    
+            window.location.href = "/";
+        }
+    </script>
 </body>
