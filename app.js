@@ -55,6 +55,18 @@ const pool = new Pool({
     port: process.env.RDS_DATABASE_Port
 });
 
+const testConnection = async () => {
+    try {
+        const result = await this.pool.query('SELECT * FROM leaderboard');
+        console.log('Connection successful! Result:', result.rows);
+        return result;
+    } catch (e) {
+        if (e.toString().indexOf('no pg_hba.conf entry for host') !== -1) {
+            throw new Error(`Please use CUBEJS_DB_SSL=true to connect: ${e.toString()}`);
+        }
+        throw e;
+    }
+}
 
 //Middleware for parsing URL-encoded data in the body of incoming requests
 app.use(express.urlencoded({ extended: true }));
