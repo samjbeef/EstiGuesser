@@ -105,26 +105,17 @@ app.post('/check-guess', async (req, res) => {
         let message = ''; // Initialize an empty message
 
         if (correctGuess) {
-            const tries = (maxChances - remainingChances) + 1;
-            
-            //TODO: Add scoring algorithm
-            /*const priceDifference = Math.abs(price - userGuess);
-            const points = Math.round(Math.max(0, 100 - (priceDifference / price) * 100));
+            const tries = (maxChances - remainingChances) + 1;                  
 
-            if (points > bestScore) {
-                bestScore = points; // Update the best score if the current score is higher
-            }
+            bestScore = calculateScore(userGuess, price);
 
-            You score is${points}!
-            */
-
-            message = `Congratulations! You guessed the correct price in ${tries} tries.`;
+            message = `Congratulations! You guessed the correct price in ${tries} tries. You score is${bestScore}!`;
             
             return res.render('./layouts/play.hbs', {
                 message,
                 userGuess: userGuess,
                 showPlayAgain: true,
-                //bestScore,
+                bestScore,
                 price,
                 address, 
                 yearBuilt,
@@ -189,8 +180,8 @@ app.get('/play', (request, response) => {
     console.log('JSON.stringify(request.body)')
     console.log(JSON.stringify(request.body))
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
-    const message = request.query.message || ''; // Retrieve the message from the query parameter
-    const user_input = request.body.user_input || request.params.user_input
+    const message = request.query.message || ''; // Retrieve the message from the query parameter    
+    const user_input = request.query.user_input;
     const remainingChancesEqualsZero = remainingChances === undefined || remainingChances === 0;
     // Check if remaining chances are zero
     if (remainingChancesEqualsZero) {
@@ -201,23 +192,19 @@ app.get('/play', (request, response) => {
             currency: 'USD',
         });
 
-        //TODO: Add score logic
-        // Calculate the score
-        /*const priceDifference = Math.abs(price - correctGuess);
-        const score = Math.round(Math.max(0, 100 - (priceDifference / price) * 100));
+        //Score logic
+        const score = calculateScore(user_input, correctGuess);
 
         // Update the best score if the current score is higher
         if (score > bestScore) {
             bestScore = score;
-        }
-        Your score is ${score}.
+        }        
 
-        */
         response.render('./layouts/play.hbs', {
-            message: `The correct price was ${formattedCorrectGuess}.`,
-            user_input,
+            message: `The correct price was ${formattedCorrectGuess}. Your score is ${bestScore}.`,            
             remainingChancesEqualsZero,
             showPlayAgain: true,
+            bestScore,
             address,
             price, 
             yearBuilt, 
@@ -227,8 +214,7 @@ app.get('/play', (request, response) => {
     } else {
         // Display the regular game interface with the message
         response.render('./layouts/play.hbs', {
-            message,
-            stuff: JSON.stringify(user_input),
+            message,            
             remainingChancesEqualsZero,
             address,
             price,
@@ -237,6 +223,12 @@ app.get('/play', (request, response) => {
         });
     }
 });
+
+function calculateScore(userGuess, actualPrice) {
+    const priceDifference = Math.abs(actualPrice - userGuess);    
+    const score = Math.round(Math.max(0, 100 - (priceDifference / actualPrice) * 100));
+    return score;
+}
 
 app.listen(port, () => {
     console.log("app listening on port 3000");
