@@ -109,6 +109,7 @@ const fetchRealEstateData = async () => {
 app.post('/check-guess', async (req, res) => {
     const userGuess = parseInt(req.body.userInput);
     const client = await pool.connect();
+    testConnection();
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
 
     try {
