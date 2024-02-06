@@ -69,11 +69,21 @@ const testConnection = async () => {
         throw e;
     }
 }
-async function getLeaderboardData(limit, orderBy) {
+async function getLeaderboardData(timeRange, limit, orderBy) {
     const client = await pool.connect();
     try {
-        // Fetch top N entries based on your sorting logic
-        const result = await client.query(`SELECT name, score, timeplayed FROM leaderboard ORDER BY ${orderBy} DESC LIMIT $1`, [limit]);
+        let query;
+        if (timeRange === 'last24Hours') {
+            // Fetch top N entries for the last 24 hours based on date_played
+            query = `SELECT name, score, timeplayed FROM leaderboard WHERE date_played >= NOW() - interval '24 hours' ORDER BY ${orderBy} DESC LIMIT $1`;
+        } else if (timeRange === 'allTime') {
+            // Fetch top N entries all time based on your sorting logic
+            query = `SELECT name, score, timeplayed FROM leaderboard ORDER BY ${orderBy} DESC LIMIT $1`;
+        } else {
+            throw new Error('Invalid time range specified');
+        }
+
+        const result = await client.query(query, [limit]);
         return result.rows;
     } finally {
         client.release();
@@ -82,11 +92,11 @@ async function getLeaderboardData(limit, orderBy) {
 
 app.get('/leaderboard', async (req, res) => {
     try {
-        // Fetch top 10 for last 24 hours based on date_played
-        const last24HoursEntries = await getLeaderboardData(10, 'score');
+        // Fetch top 10 for the last 24 hours based on date_played
+        const last24HoursEntries = await getLeaderboardData('last24Hours', 10, 'score');
 
         // Fetch top 25 all time based on score
-        const allTimeEntries = await getLeaderboardData(25, 'score');
+        const allTimeEntries = await getLeaderboardData('allTime', 25, 'score');
 
         res.render('layouts/leaderboard.hbs', { last24HoursEntries, allTimeEntries });
     } catch (error) {
