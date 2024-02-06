@@ -11,6 +11,10 @@ body {
     background-color: #ffffff;
     /* Set a white background color */
     padding: 20px;
+    border-radius: 10px;
+    /* Add rounded corners to the jumbotron */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    /* Add a subtle shadow for depth */
 }
 
 .display-4 {
@@ -23,17 +27,13 @@ h2 {
     /* Set a muted color for section titles */
 }
 
-ul {
-    list-style-type: none;
+ol {
+    list-style: none;
     padding: 0;
 }
 
-ul li {
-    margin-bottom: 5px;
-}
-
-.row {
-    margin-top: 20px;
+ol li {
+    margin-bottom: 10px;
 }
 
 /* Optional: Center the leaderboards on larger screens */
