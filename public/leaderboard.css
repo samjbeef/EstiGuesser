@@ -36,11 +36,26 @@ ol li {
     margin-bottom: 10px;
     background-color: #f8f9fa;
     /* Add a light background color to list items */
-    padding: 8px;
-    border-radius: 5px;
+    padding: 12px;
+    border-radius: 8px;
     /* Add rounded corners to list items */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     /* Add a subtle shadow to list items */
+    transition: background-color 0.3s ease-in-out;
+}
+
+ol li:hover {
+    background-color: #e2e6ea;
+    /* Highlight background color on hover */
+}
+
+/* Add Font Awesome icons */
+ol li::before {
+    content: "\f007";
+    /* Unicode for a Font Awesome icon, adjust as needed */
+    font-family: 'Font Awesome 5 Free';
+    margin-right: 8px;
+    color: #007bff;
 }
 
 /* Optional: Center the leaderboards on larger screens */
