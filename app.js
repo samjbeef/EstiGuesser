@@ -108,6 +108,7 @@ const fetchRealEstateData = async () => {
     }
 };
 
+
 app.post('/check-guess', async (req, res) => {
     const userGuess = parseInt(req.body.userInput);
     const client = await pool.connect();
@@ -185,6 +186,10 @@ app.get('/', async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
+app.get('/leaderboard', async (req, res) => {
+    response.render('./layouts/leaderboard.hbs', {
+    });
+})
 
 app.get('/play', (request, response) => {
     //console.log('JSON.stringify(request.body)')

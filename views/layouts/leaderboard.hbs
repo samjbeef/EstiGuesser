@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboards</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+    <link rel="stylesheet" href="leaderboard.css">
+</head>
+
+<body>
+    <div class="container mt-4">
+        <div class="jumbotron">
+            <h1 class="display-4">
+                <center>Leaderboards</center>
+            </h1>
+            <hr class="my-4">
+
+            <!-- Leaderboards -->
+            <div class="row">
+                <!-- Last 24 Hours Leaderboard -->
+                <div class="col-md-6">
+                    <h2>Last 24 Hours Leaderboard</h2>
+                    <ul>
+                        {{#each last24HoursEntries}}
+                        <li>{{this.player}} - Score: {{this.score}}</li>
+                        {{/each}}
+                    </ul>
+                </div>
+
+                <!-- All Time Leaderboard -->
+                <div class="col-md-6">
+                    <h2>All Time Leaderboard</h2>
+                    <ul>
+                        {{#each allTimeEntries}}
+                        <li>{{this.player}} - Score: {{this.score}}</li>
+                        {{/each}}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>
