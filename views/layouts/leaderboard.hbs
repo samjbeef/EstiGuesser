@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -24,7 +24,7 @@
                 <div class="col-md-6 order-md-1 order-2">
                     <h2>All Time Leaderboard (Top 25)</h2>
                     <ol>
-                        {{#each allTimeEntries.slice 0 25}}
+                        {{#each allTimeEntries}}
                         <li>{{this.player}} - Score: {{this.score}}</li>
                         {{/each}}
                     </ol>
@@ -34,7 +34,7 @@
                 <div class="col-md-6 order-md-2 order-1">
                     <h2>Last 24 Hours Leaderboard (Top 10)</h2>
                     <ol>
-                        {{#each last24HoursEntries.slice 0 10}}
+                        {{#each last24HoursEntries}}
                         <li>{{this.player}} - Score: {{this.score}}</li>
                         {{/each}}
                     </ol>
