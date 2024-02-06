@@ -146,8 +146,8 @@ app.post('/check-guess', async (req, res) => {
 const port = process.env.port || 3000;
 app.use(express.json())
 
-console.log(__dirname);
-const publicDirectory = path.join(__dirname, './public');
+//console.log(__dirname);
+//const publicDirectory = path.join(__dirname, './public');
 
 
 app.get('/', async (req, res) => {
