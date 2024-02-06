@@ -187,7 +187,7 @@ app.get('/', async (req, res) => {
     }
 });
 app.get('/leaderboard', async (req, res) => {
-    response.render('./layouts/leaderboard.hbs', {
+    res.render('./layouts/leaderboard.hbs', {
     });
 })
 
