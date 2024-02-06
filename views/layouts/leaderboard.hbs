@@ -27,7 +27,7 @@
                     <h2>All Time Leaderboard (Top 25)</h2>
                     <ol>
                         {{#each allTimeEntries}}
-                        <li>{{this.player}} - Score: {{this.score}}</li>
+                        <li>{{name.player}} - Score: {{name.score}}</li>
                         {{/each}}
                     </ol>
                 </div>
@@ -37,7 +37,7 @@
                     <h2>Last 24 Hours Leaderboard (Top 10)</h2>
                     <ol>
                         {{#each last24HoursEntries}}
-                        <li>{{this.player}} - Score: {{this.score}}</li>
+                        <li>{{this.name}} - Score: {{name.score}}</li>
                         {{/each}}
                     </ol>
                 </div>
