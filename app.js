@@ -11,6 +11,7 @@ const { stringify } = require('querystring');
 const { request } = require('http');
 var requestIp = require('request-ip');
 const { Pool } = require('pg');
+dotenv.config()
 
 
 let options = {
@@ -55,6 +56,7 @@ const pool = new Pool({
 });
 
 
+
 //Middleware for parsing URL-encoded data in the body of incoming requests
 app.use(express.urlencoded({ extended: true }));
 const maxChances = 3; // Set the maximum number of chances
@@ -70,7 +72,7 @@ const fetchRealEstateData = async () => {
         url: 'https://zillow-working-api.p.rapidapi.com/pro/byzpid',
         params: { zpid: '75670062' },
         headers: {
-            'X-RapidAPI-Key': '',
+            'X-RapidAPI-Key': process.env.API_KEY,
             'X-RapidAPI-Host': 'zillow-working-api.p.rapidapi.com',
         },
     };
@@ -96,6 +98,7 @@ const fetchRealEstateData = async () => {
 app.post('/check-guess', async (req, res) => {
     const userGuess = parseInt(req.body.userInput);
     const client = await pool.connect();
+    testConnection();
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
 
     try {
@@ -105,19 +108,28 @@ app.post('/check-guess', async (req, res) => {
         let message = ''; // Initialize an empty message
 
         if (correctGuess) {
-            const tries = (maxChances - remainingChances) + 1;                  
+            const tries = (maxChances - remainingChances) + 1;
 
-            bestScore = calculateScore(userGuess, price);
+            //TODO: Add scoring algorithm
+            /*const priceDifference = Math.abs(price - userGuess);
+            const points = Math.round(Math.max(0, 100 - (priceDifference / price) * 100));
 
-            message = `Congratulations! You guessed the correct price in ${tries} tries. You score is${bestScore}!`;
-            
+            if (points > bestScore) {
+                bestScore = points; // Update the best score if the current score is higher
+            }
+
+            You score is${points}!
+            */
+
+            message = `Congratulations! You guessed the correct price in ${tries} tries.`;
+
             return res.render('./layouts/play.hbs', {
                 message,
                 userGuess: userGuess,
                 showPlayAgain: true,
-                bestScore,
+                //bestScore,
                 price,
-                address, 
+                address,
                 yearBuilt,
                 photos
             });
@@ -125,7 +137,7 @@ app.post('/check-guess', async (req, res) => {
             remainingChances--;
 
             if (remainingChances === 0) {
-                message = 'You are out of chances. Game over!';                
+                message = 'You are out of chances. Game over!';
 
             } else if (userGuess < targetNumber) {
                 message = `Try a higher number. Chances remaining: ${remainingChances}`;
@@ -160,7 +172,7 @@ app.get('/', async (req, res) => {
     try {
         remainingChances = 3;
         targetNumber = undefined;
-        
+
         // Fetch real estate data
         await fetchRealEstateData();
 
@@ -168,7 +180,7 @@ app.get('/', async (req, res) => {
             address: global.addressDetails.address,
             price: global.addressDetails.price,
             yearBuilt: global.addressDetails.yearBuilt,
-            photos: global.addressDetails.photos            
+            photos: global.addressDetails.photos
         });
     } catch (error) {
         console.error(error);
@@ -180,8 +192,8 @@ app.get('/play', (request, response) => {
     console.log('JSON.stringify(request.body)')
     console.log(JSON.stringify(request.body))
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
-    const message = request.query.message || ''; // Retrieve the message from the query parameter    
-    const user_input = request.query.user_input;
+    const message = request.query.message || ''; // Retrieve the message from the query parameter
+    const user_input = request.body.user_input || request.params.user_input
     const remainingChancesEqualsZero = remainingChances === undefined || remainingChances === 0;
     // Check if remaining chances are zero
     if (remainingChancesEqualsZero) {
@@ -192,43 +204,42 @@ app.get('/play', (request, response) => {
             currency: 'USD',
         });
 
-        //Score logic
-        const score = calculateScore(user_input, correctGuess);
+        //TODO: Add score logic
+        // Calculate the score
+        /*const priceDifference = Math.abs(price - correctGuess);
+        const score = Math.round(Math.max(0, 100 - (priceDifference / price) * 100));
 
         // Update the best score if the current score is higher
         if (score > bestScore) {
             bestScore = score;
-        }        
+        }
+        Your score is ${score}.
 
+        */
         response.render('./layouts/play.hbs', {
-            message: `The correct price was ${formattedCorrectGuess}. Your score is ${bestScore}.`,            
+            message: `The correct price was ${formattedCorrectGuess}.`,
+            user_input,
             remainingChancesEqualsZero,
             showPlayAgain: true,
-            bestScore,
             address,
-            price, 
-            yearBuilt, 
+            price,
+            yearBuilt,
             photos
         });
 
     } else {
         // Display the regular game interface with the message
         response.render('./layouts/play.hbs', {
-            message,            
+            message,
+            stuff: JSON.stringify(user_input),
             remainingChancesEqualsZero,
             address,
             price,
-            yearBuilt, 
+            yearBuilt,
             photos
         });
     }
 });
-
-function calculateScore(userGuess, actualPrice) {
-    const priceDifference = Math.abs(actualPrice - userGuess);    
-    const score = Math.round(Math.max(0, 100 - (priceDifference / actualPrice) * 100));
-    return score;
-}
 
 app.listen(port, () => {
     console.log("app listening on port 3000");
