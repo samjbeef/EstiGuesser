@@ -51,9 +51,24 @@ const pool = new Pool({
     host: process.env.RDS_DATABASE_Host,
     database: process.env.RDS_DATABASE,
     password: process.env.RDS_DATABASE_Password,
-    port: process.env.RDS_DATABASE_Port
+    port: process.env.RDS_DATABASE_Port,
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
+const testConnection = async () => {
+    try {
+        const result = await pool.query('SELECT * FROM leaderboard');
+        console.log('Connection successful! Result:', result.rows);
+        return result;
+    } catch (e) {
+        if (e.toString().indexOf('no pg_hba.conf entry for host') !== -1) {
+            throw new Error(`Please use CUBEJS_DB_SSL=true to connect: ${e.toString()}`);
+        }
+        throw e;
+    }
+}
 
 //Middleware for parsing URL-encoded data in the body of incoming requests
 app.use(express.urlencoded({ extended: true }));
@@ -70,7 +85,7 @@ const fetchRealEstateData = async () => {
         url: 'https://zillow-working-api.p.rapidapi.com/pro/byzpid',
         params: { zpid: '75670062' },
         headers: {
-            'X-RapidAPI-Key': '',
+            'X-RapidAPI-Key': 'process.env.API_KEY',
             'X-RapidAPI-Host': 'zillow-working-api.p.rapidapi.com',
         },
     };
@@ -96,6 +111,7 @@ const fetchRealEstateData = async () => {
 app.post('/check-guess', async (req, res) => {
     const userGuess = parseInt(req.body.userInput);
     const client = await pool.connect();
+    testConnection();
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
 
     try {
@@ -105,19 +121,19 @@ app.post('/check-guess', async (req, res) => {
         let message = ''; // Initialize an empty message
 
         if (correctGuess) {
-            const tries = (maxChances - remainingChances) + 1;                  
+            const tries = (maxChances - remainingChances) + 1;
 
             bestScore = calculateScore(userGuess, price);
 
             message = `Congratulations! You guessed the correct price in ${tries} tries. You score is${bestScore}!`;
-            
+
             return res.render('./layouts/play.hbs', {
                 message,
                 userGuess: userGuess,
                 showPlayAgain: true,
                 bestScore,
                 price,
-                address, 
+                address,
                 yearBuilt,
                 photos
             });
@@ -125,7 +141,7 @@ app.post('/check-guess', async (req, res) => {
             remainingChances--;
 
             if (remainingChances === 0) {
-                message = 'You are out of chances. Game over!';                
+                message = 'You are out of chances. Game over!';
 
             } else if (userGuess < targetNumber) {
                 message = `Try a higher number. Chances remaining: ${remainingChances}`;
@@ -160,7 +176,7 @@ app.get('/', async (req, res) => {
     try {
         remainingChances = 3;
         targetNumber = undefined;
-        
+
         // Fetch real estate data
         await fetchRealEstateData();
 
@@ -168,7 +184,7 @@ app.get('/', async (req, res) => {
             address: global.addressDetails.address,
             price: global.addressDetails.price,
             yearBuilt: global.addressDetails.yearBuilt,
-            photos: global.addressDetails.photos            
+            photos: global.addressDetails.photos
         });
     } catch (error) {
         console.error(error);
@@ -198,34 +214,34 @@ app.get('/play', (request, response) => {
         // Update the best score if the current score is higher
         if (score > bestScore) {
             bestScore = score;
-        }        
+        }
 
         response.render('./layouts/play.hbs', {
-            message: `The correct price was ${formattedCorrectGuess}. Your score is ${bestScore}.`,            
+            message: `The correct price was ${formattedCorrectGuess}. Your score is ${bestScore}.`,
             remainingChancesEqualsZero,
             showPlayAgain: true,
             bestScore,
             address,
-            price, 
-            yearBuilt, 
+            price,
+            yearBuilt,
             photos
         });
 
     } else {
         // Display the regular game interface with the message
         response.render('./layouts/play.hbs', {
-            message,            
+            message,
             remainingChancesEqualsZero,
             address,
             price,
-            yearBuilt, 
+            yearBuilt,
             photos
         });
     }
 });
 
 function calculateScore(userGuess, actualPrice) {
-    const priceDifference = Math.abs(actualPrice - userGuess);    
+    const priceDifference = Math.abs(actualPrice - userGuess);
     const score = Math.round(Math.max(0, 100 - (priceDifference / actualPrice) * 100));
     return score;
 }
