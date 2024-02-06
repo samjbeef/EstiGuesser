@@ -69,6 +69,42 @@ const testConnection = async () => {
         throw e;
     }
 }
+async function getLeaderboardData(timeRange, limit, orderBy) {
+    const client = await pool.connect();
+    try {
+        let query;
+        if (timeRange === 'last24Hours') {
+            // Fetch top N entries for the last 24 hours based on date_played
+            query = `SELECT name, score, timeplayed FROM leaderboard WHERE timeplayed >= NOW() - interval '24 hours' ORDER BY ${orderBy} DESC LIMIT $1`;
+        } else if (timeRange === 'allTime') {
+            // Fetch top N entries all time based on your sorting logic
+            query = `SELECT name, score, timeplayed FROM leaderboard ORDER BY ${orderBy} DESC LIMIT $1`;
+        } else {
+            throw new Error('Invalid time range specified');
+        }
+
+        const result = await client.query(query, [limit]);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+app.get('/leaderboard', async (req, res) => {
+    try {
+        // Fetch top 10 for the last 24 hours based on date_played
+        const last24HoursEntries = await getLeaderboardData('last24Hours', 10, 'score');
+
+        // Fetch top 25 all time based on score
+        const allTimeEntries = await getLeaderboardData('allTime', 25, 'score');
+
+        res.render('layouts/leaderboard.hbs', { last24HoursEntries, allTimeEntries });
+    } catch (error) {
+        console.error('Error fetching leaderboard data:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
 
 //Middleware for parsing URL-encoded data in the body of incoming requests
 app.use(express.urlencoded({ extended: true }));
@@ -107,6 +143,7 @@ const fetchRealEstateData = async () => {
         throw error;
     }
 };
+
 
 app.post('/check-guess', async (req, res) => {
     const userGuess = parseInt(req.body.userInput);
@@ -185,6 +222,10 @@ app.get('/', async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
+app.get('/leaderboard', async (req, res) => {
+    res.render('./layouts/leaderboard.hbs', {
+    });
+})
 
 app.get('/play', (request, response) => {
     //console.log('JSON.stringify(request.body)')
