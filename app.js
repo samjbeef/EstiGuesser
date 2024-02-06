@@ -69,6 +69,32 @@ const testConnection = async () => {
         throw e;
     }
 }
+async function getLeaderboardData(limit, orderBy) {
+    const client = await pool.connect();
+    try {
+        // Fetch top N entries based on your sorting logic
+        const result = await client.query(`SELECT player, score, date_played FROM leaderboard ORDER BY ${orderBy} DESC LIMIT $1`, [limit]);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+app.get('/leaderboard', async (req, res) => {
+    try {
+        // Fetch top 10 for last 24 hours based on date_played
+        const last24HoursEntries = await getLeaderboardData(10, 'score');
+
+        // Fetch top 25 all time based on score
+        const allTimeEntries = await getLeaderboardData(25, 'score');
+
+        res.render('leaderboards.hbs', { last24HoursEntries, allTimeEntries });
+    } catch (error) {
+        console.error('Error fetching leaderboard data:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
 
 //Middleware for parsing URL-encoded data in the body of incoming requests
 app.use(express.urlencoded({ extended: true }));
