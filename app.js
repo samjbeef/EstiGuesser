@@ -73,7 +73,7 @@ async function getLeaderboardData(limit, orderBy) {
     const client = await pool.connect();
     try {
         // Fetch top N entries based on your sorting logic
-        const result = await client.query(`SELECT player, score, date_played FROM leaderboard ORDER BY ${orderBy} DESC LIMIT $1`, [limit]);
+        const result = await client.query(`SELECT name, score, timeplayed FROM leaderboard ORDER BY ${orderBy} DESC LIMIT $1`, [limit]);
         return result.rows;
     } finally {
         client.release();
