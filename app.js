@@ -75,7 +75,7 @@ async function getLeaderboardData(timeRange, limit, orderBy) {
         let query;
         if (timeRange === 'last24Hours') {
             // Fetch top N entries for the last 24 hours based on date_played
-            query = `SELECT name, score, timeplayed FROM leaderboard WHERE date_played >= NOW() - interval '24 hours' ORDER BY ${orderBy} DESC LIMIT $1`;
+            query = `SELECT name, score, timeplayed FROM leaderboard WHERE timeplayed >= NOW() - interval '24 hours' ORDER BY ${orderBy} DESC LIMIT $1`;
         } else if (timeRange === 'allTime') {
             // Fetch top N entries all time based on your sorting logic
             query = `SELECT name, score, timeplayed FROM leaderboard ORDER BY ${orderBy} DESC LIMIT $1`;
