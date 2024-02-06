@@ -57,7 +57,7 @@ const pool = new Pool({
 
 const testConnection = async () => {
     try {
-        const result = await this.pool.query('SELECT * FROM leaderboard');
+        const result = await pool.query('SELECT * FROM leaderboard');
         console.log('Connection successful! Result:', result.rows);
         return result;
     } catch (e) {
