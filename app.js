@@ -88,7 +88,7 @@ app.get('/leaderboard', async (req, res) => {
         // Fetch top 25 all time based on score
         const allTimeEntries = await getLeaderboardData(25, 'score');
 
-        res.render('leaderboards.hbs', { last24HoursEntries, allTimeEntries });
+        res.render('leaderboard.hbs', { last24HoursEntries, allTimeEntries });
     } catch (error) {
         console.error('Error fetching leaderboard data:', error);
         res.status(500).send('Internal Server Error');
