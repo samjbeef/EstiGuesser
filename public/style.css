@@ -1,4 +1,62 @@
- body {
+body {
+    background-image: url("housePic.jpg");
+    background-size: 100%;
+}
+
+.container {
+    margin-top: 20px;
+}
+
+.jumbotron {
+    background-color: rgba(255, 255, 255, 0.9);
+    /* Add a light background color */
+    padding: 20px;
+}
+
+.display-4 {
+    color: #007bff;
+    /* Set the text color to a Bootstrap primary color */
+}
+
+.btn-primary {
+    background-color: #28a745;
+    /* Set the background color to a Bootstrap success color */
+    border-color: #28a745;
+    /* Set the border color to match the background color */
+}
+
+.btn-primary:hover {
+    background-color: #218838;
+    /* Darker color on hover for better feedback */
+    border-color: #1e7e34;
+}
+
+h2 {
+    color: #6c757d;
+    /* Set a muted color for section titles */
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+ul li {
+    margin-bottom: 5px;
+}
+
+.row {
+    margin-top: 20px;
+}
+
+/* Optional: Center the leaderboards on larger screens */
+@media (min-width: 768px) {
+    .col-md-6 {
+        text-align: center;
+    }
+}
+
+/* body {
      background-image: url("housePic.jpg");
      background-size: 100%;
- }
+ } */
