@@ -85,7 +85,7 @@ const fetchRealEstateData = async () => {
         url: 'https://zillow-working-api.p.rapidapi.com/pro/byzpid',
         params: { zpid: '75670062' },
         headers: {
-            'X-RapidAPI-Key': 'process.env.API_KEY',
+            'X-RapidAPI-Key': process.env.API_KEY,
             'X-RapidAPI-Host': 'zillow-working-api.p.rapidapi.com',
         },
     };
@@ -162,15 +162,9 @@ app.post('/check-guess', async (req, res) => {
 const port = process.env.port || 3000;
 app.use(express.json())
 
-console.log(__dirname);
-const publicDirectory = path.join(__dirname, './public');
+//console.log(__dirname);
+//const publicDirectory = path.join(__dirname, './public');
 
-/*app.get('/', (req, res) => {
-    remainingChances = 3;
-    targetNumber = undefined;
-    res.render("./layouts/index.hbs")
-})
-*/
 
 app.get('/', async (req, res) => {
     try {
@@ -193,8 +187,8 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/play', (request, response) => {
-    console.log('JSON.stringify(request.body)')
-    console.log(JSON.stringify(request.body))
+    //console.log('JSON.stringify(request.body)')
+    //console.log(JSON.stringify(request.body))
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
     const message = request.query.message || ''; // Retrieve the message from the query parameter    
     const user_input = request.query.user_input;
