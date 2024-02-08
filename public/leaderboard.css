@@ -1,0 +1,66 @@
+body {
+    background-color: #f8f9fa;
+    /* Set a light background color */
+}
+
+.container {
+    margin-top: 20px;
+}
+
+.jumbotron {
+    background-color: #ffffff;
+    /* Set a white background color */
+    padding: 20px;
+    border-radius: 10px;
+    /* Add rounded corners to the jumbotron */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    /* Add a subtle shadow for depth */
+}
+
+.display-4 {
+    color: #007bff;
+    /* Set the text color to a Bootstrap primary color */
+}
+
+h2 {
+    color: #6c757d;
+    /* Set a muted color for section titles */
+}
+
+ol {
+    list-style: none;
+    padding: 0;
+}
+
+ol li {
+    margin-bottom: 10px;
+    background-color: #f8f9fa;
+    /* Add a light background color to list items */
+    padding: 12px;
+    border-radius: 8px;
+    /* Add rounded corners to list items */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    /* Add a subtle shadow to list items */
+    transition: background-color 0.3s ease-in-out;
+}
+
+ol li:hover {
+    background-color: #e2e6ea;
+    /* Highlight background color on hover */
+}
+
+/* Add Font Awesome icons */
+ol li::before {
+    content: "\f007";
+    /* Unicode for a Font Awesome icon, adjust as needed */
+    font-family: 'Font Awesome 5 Free';
+    margin-right: 8px;
+    color: #007bff;
+}
+
+/* Optional: Center the leaderboards on larger screens */
+@media (min-width: 768px) {
+    .col-md-6 {
+        text-align: center;
+    }
+}
