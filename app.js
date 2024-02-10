@@ -51,7 +51,58 @@ const pool = new Pool({
     host: process.env.RDS_DATABASE_Host,
     database: process.env.RDS_DATABASE,
     password: process.env.RDS_DATABASE_Password,
-    port: process.env.RDS_DATABASE_Port
+    port: process.env.RDS_DATABASE_Port,
+    ssl: {
+        rejectUnauthorized: false
+    }
+});
+
+const testConnection = async () => {
+    try {
+        const result = await pool.query('SELECT * FROM leaderboard');
+        console.log('Connection successful! Result:', result.rows);
+        return result;
+    } catch (e) {
+        if (e.toString().indexOf('no pg_hba.conf entry for host') !== -1) {
+            throw new Error(`Please use CUBEJS_DB_SSL=true to connect: ${e.toString()}`);
+        }
+        throw e;
+    }
+}
+async function getLeaderboardData(timeRange, limit, orderBy) {
+    const client = await pool.connect();
+    try {
+        let query;
+        if (timeRange === 'last24Hours') {
+            // Fetch top N entries for the last 24 hours based on date_played
+            query = `SELECT name, score, timeplayed FROM leaderboard WHERE timeplayed >= NOW() - interval '24 hours' ORDER BY ${orderBy} DESC LIMIT $1`;
+        } else if (timeRange === 'allTime') {
+            // Fetch top N entries all time based on your sorting logic
+            query = `SELECT name, score, timeplayed FROM leaderboard ORDER BY ${orderBy} DESC LIMIT $1`;
+        } else {
+            throw new Error('Invalid time range specified');
+        }
+
+        const result = await client.query(query, [limit]);
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
+app.get('/leaderboard', async (req, res) => {
+    try {
+        // Fetch top 10 for the last 24 hours based on date_played
+        const last24HoursEntries = await getLeaderboardData('last24Hours', 10, 'score');
+
+        // Fetch top 25 all time based on score
+        const allTimeEntries = await getLeaderboardData('allTime', 25, 'score');
+
+        res.render('layouts/leaderboard.hbs', { last24HoursEntries, allTimeEntries });
+    } catch (error) {
+        console.error('Error fetching leaderboard data:', error);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 
@@ -70,7 +121,7 @@ const fetchRealEstateData = async () => {
         url: 'https://zillow-working-api.p.rapidapi.com/pro/byzpid',
         params: { zpid: '75670062' },
         headers: {
-            'X-RapidAPI-Key': '',
+            'X-RapidAPI-Key': process.env.API_KEY,
             'X-RapidAPI-Host': 'zillow-working-api.p.rapidapi.com',
         },
     };
@@ -93,9 +144,11 @@ const fetchRealEstateData = async () => {
     }
 };
 
+
 app.post('/check-guess', async (req, res) => {
     const userGuess = parseInt(req.body.userInput);
     const client = await pool.connect();
+    testConnection();
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
 
     try {
@@ -106,27 +159,18 @@ app.post('/check-guess', async (req, res) => {
 
         if (correctGuess) {
             const tries = (maxChances - remainingChances) + 1;
-            
-            //TODO: Add scoring algorithm
-            /*const priceDifference = Math.abs(price - userGuess);
-            const points = Math.round(Math.max(0, 100 - (priceDifference / price) * 100));
 
-            if (points > bestScore) {
-                bestScore = points; // Update the best score if the current score is higher
-            }
+            bestScore = calculateScore(userGuess, price);
 
-            You score is${points}!
-            */
+            message = `Congratulations! You guessed the correct price in ${tries} tries. You score is${bestScore}!`;
 
-            message = `Congratulations! You guessed the correct price in ${tries} tries.`;
-            
             return res.render('./layouts/play.hbs', {
                 message,
                 userGuess: userGuess,
                 showPlayAgain: true,
-                //bestScore,
+                bestScore,
                 price,
-                address, 
+                address,
                 yearBuilt,
                 photos
             });
@@ -134,7 +178,7 @@ app.post('/check-guess', async (req, res) => {
             remainingChances--;
 
             if (remainingChances === 0) {
-                message = 'You are out of chances. Game over!';                
+                message = 'You are out of chances. Game over!';
 
             } else if (userGuess < targetNumber) {
                 message = `Try a higher number. Chances remaining: ${remainingChances}`;
@@ -155,21 +199,15 @@ app.post('/check-guess', async (req, res) => {
 const port = process.env.port || 3000;
 app.use(express.json())
 
-console.log(__dirname);
-const publicDirectory = path.join(__dirname, './public');
+//console.log(__dirname);
+//const publicDirectory = path.join(__dirname, './public');
 
-/*app.get('/', (req, res) => {
-    remainingChances = 3;
-    targetNumber = undefined;
-    res.render("./layouts/index.hbs")
-})
-*/
 
 app.get('/', async (req, res) => {
     try {
         remainingChances = 3;
         targetNumber = undefined;
-        
+
         // Fetch real estate data
         await fetchRealEstateData();
 
@@ -177,20 +215,24 @@ app.get('/', async (req, res) => {
             address: global.addressDetails.address,
             price: global.addressDetails.price,
             yearBuilt: global.addressDetails.yearBuilt,
-            photos: global.addressDetails.photos            
+            photos: global.addressDetails.photos
         });
     } catch (error) {
         console.error(error);
         res.status(500).send('Internal Server Error');
     }
 });
+app.get('/leaderboard', async (req, res) => {
+    res.render('./layouts/leaderboard.hbs', {
+    });
+})
 
 app.get('/play', (request, response) => {
-    console.log('JSON.stringify(request.body)')
-    console.log(JSON.stringify(request.body))
+    //console.log('JSON.stringify(request.body)')
+    //console.log(JSON.stringify(request.body))
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
-    const message = request.query.message || ''; // Retrieve the message from the query parameter
-    const user_input = request.body.user_input || request.params.user_input
+    const message = request.query.message || ''; // Retrieve the message from the query parameter    
+    const user_input = request.query.user_input;
     const remainingChancesEqualsZero = remainingChances === undefined || remainingChances === 0;
     // Check if remaining chances are zero
     if (remainingChancesEqualsZero) {
@@ -201,26 +243,22 @@ app.get('/play', (request, response) => {
             currency: 'USD',
         });
 
-        //TODO: Add score logic
-        // Calculate the score
-        /*const priceDifference = Math.abs(price - correctGuess);
-        const score = Math.round(Math.max(0, 100 - (priceDifference / price) * 100));
+        //Score logic
+        const score = calculateScore(user_input, correctGuess);
 
         // Update the best score if the current score is higher
         if (score > bestScore) {
             bestScore = score;
         }
-        Your score is ${score}.
 
-        */
         response.render('./layouts/play.hbs', {
-            message: `The correct price was ${formattedCorrectGuess}.`,
-            user_input,
+            message: `The correct price was ${formattedCorrectGuess}. Your score is ${bestScore}.`,
             remainingChancesEqualsZero,
             showPlayAgain: true,
+            bestScore,
             address,
-            price, 
-            yearBuilt, 
+            price,
+            yearBuilt,
             photos
         });
 
@@ -228,15 +266,20 @@ app.get('/play', (request, response) => {
         // Display the regular game interface with the message
         response.render('./layouts/play.hbs', {
             message,
-            stuff: JSON.stringify(user_input),
             remainingChancesEqualsZero,
             address,
             price,
-            yearBuilt, 
+            yearBuilt,
             photos
         });
     }
 });
+
+function calculateScore(userGuess, actualPrice) {
+    const priceDifference = Math.abs(actualPrice - userGuess);
+    const score = Math.round(Math.max(0, 100 - (priceDifference / actualPrice) * 100));
+    return score;
+}
 
 app.listen(port, () => {
     console.log("app listening on port 3000");
