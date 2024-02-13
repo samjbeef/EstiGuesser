@@ -11,7 +11,7 @@ EstiGuessr is a browser-based game where you, the player, will be provided with 
 
 ## Updates
 ### Design
-![Screenshot of the design architecture](Design.png)
+
 
 ### Code Explained
 
