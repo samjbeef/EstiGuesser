@@ -14,11 +14,7 @@ EstiGuessr is a browser-based game where you, the player, will be provided with 
 ![Screenshot of the design architecture](Design.png)
 
 ### Code Explained
-![Screenshot of some code](Code_1.png)
 
-![Screenshot of some more code](Code_2.png)
-
-![Screenshot of yet more code](Code_3.png)
 
 ## Milestones
 - 09/21/2023: Concept and Design Phase - Completed
