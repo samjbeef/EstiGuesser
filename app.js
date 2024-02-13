@@ -55,6 +55,8 @@ const pool = new Pool({
     ssl: {
         rejectUnauthorized: false
     }
+    
+    
 });
 
 const testConnection = async () => {
@@ -106,6 +108,7 @@ app.get('/leaderboard', async (req, res) => {
 });
 
 
+
 //Middleware for parsing URL-encoded data in the body of incoming requests
 app.use(express.urlencoded({ extended: true }));
 const maxChances = 3; // Set the maximum number of chances
@@ -114,12 +117,20 @@ let targetNumber;
 let bestScore = 0;
 
 
+// Array of pre-defined zpid values
+const zpidArray = ['75631637', '75630783', '75649898', '339427424'/* add more zpid values */];
 
-const fetchRealEstateData = async () => {
+// Function to randomly choose a zpid from the array
+const getRandomZpid = () => {
+    const randomIndex = Math.floor(Math.random() * zpidArray.length);
+    return zpidArray[randomIndex];
+};
+
+const fetchRealEstateData = async (zpid) => {
     const options = {
         method: 'GET',
         url: 'https://zillow-working-api.p.rapidapi.com/pro/byzpid',
-        params: { zpid: '75670062' },
+        params: { zpid },
         headers: {
             'X-RapidAPI-Key': process.env.API_KEY,
             'X-RapidAPI-Host': 'zillow-working-api.p.rapidapi.com',
@@ -149,6 +160,9 @@ app.post('/check-guess', async (req, res) => {
     const userGuess = parseInt(req.body.userInput);
     const client = await pool.connect();
     testConnection();
+    
+
+
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
 
     try {
@@ -208,8 +222,11 @@ app.get('/', async (req, res) => {
         remainingChances = 3;
         targetNumber = undefined;
 
+        // Get a random zpid from the array
+        const randomZpid = getRandomZpid();
+
         // Fetch real estate data
-        await fetchRealEstateData();
+        await fetchRealEstateData(randomZpid);
 
         res.render('./layouts/index.hbs', {
             address: global.addressDetails.address,
@@ -227,9 +244,7 @@ app.get('/leaderboard', async (req, res) => {
     });
 })
 
-app.get('/play', (request, response) => {
-    //console.log('JSON.stringify(request.body)')
-    //console.log(JSON.stringify(request.body))
+app.get('/play', (request, response) => {    
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
     const message = request.query.message || ''; // Retrieve the message from the query parameter    
     const user_input = request.query.user_input;
