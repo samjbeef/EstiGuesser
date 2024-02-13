@@ -11,10 +11,12 @@ EstiGuessr is a browser-based game where you, the player, will be provided with 
 
 ## Updates
 ### Design
-
+![Design](https://github.com/samjbeef/EstiGuesser/assets/73117832/60a1db68-a119-44a4-a50e-cbaf5a144a0c)
 
 ### Code Explained
-
+![Code_3](https://github.com/samjbeef/EstiGuesser/assets/73117832/d6394aac-00b6-4594-86a9-38b95c1e768a)
+![Code_2](https://github.com/samjbeef/EstiGuesser/assets/73117832/1d9547e4-c6eb-4e2e-964d-5f121b26e723)
+![Code_1](https://github.com/samjbeef/EstiGuesser/assets/73117832/a868bb43-aaed-45d6-adf3-543a87703963)
 
 ## Milestones
 - 09/21/2023: Concept and Design Phase - Completed
