@@ -14,7 +14,7 @@ const { stringify } = require('querystring');
 const { request } = require('http');
 var requestIp = require('request-ip');
 const { Pool } = require('pg');
-const { getLeaderboardData, connectDB } = require('./db')
+const { getLeaderboardData, connectDB, makeTunnel2 } = require('./db')
 
 let options = {
     dotfiles: "ignore", //allow, deny, ignore
@@ -46,17 +46,20 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 
 
-let pool
+let dbCon
 
 async function getDBcon() {
-    pool = await connectDB()
+    dbCon = await connectDB()
+    // dbCon = await makeTunnel2()
+    // console.log(dbCon)
+
 }
 
 getDBcon();
 
 const testConnection = async () => {
     try {
-        const result = await pool.query('SELECT * FROM leaderboard');
+        const result = await dbCon.query('SELECT * FROM leaderboard');
         console.log('Connection successful! Result:', result.rows);
         return result;
     } catch (e) {
@@ -70,16 +73,17 @@ const testConnection = async () => {
 app.get('/leaderboard', async (req, res) => {
     try {
         // Fetch top 10 for the last 24 hours based on date_played
-        const last24HoursEntries = await getLeaderboardData('last24Hours', 10, 'score');
-
+        const last24HoursEntries = null; //await getLeaderboardData('sshTunnelClient', 'last24Hours', 10, 'score');
+        //console.log('this the data: ', result.rows)
         // Fetch top 25 all time based on score
-        const allTimeEntries = await getLeaderboardData('allTime', 25, 'score');
+        const allTimeEntries = await getLeaderboardData(dbCon, 'allTime', 25, 'score');
 
         res.render('layouts/leaderboard.hbs', { last24HoursEntries, allTimeEntries });
     } catch (error) {
         console.error('Error fetching leaderboard data:', error);
         res.status(500).send('Internal Server Error');
     }
+
 });
 
 
@@ -124,7 +128,7 @@ const fetchRealEstateData = async () => {
 
 app.post('/check-guess', async (req, res) => {
     const userGuess = parseInt(req.body.userInput);
-    const client = await pool.connect();
+    const client = await dbCon.connect();
     testConnection();
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
 
