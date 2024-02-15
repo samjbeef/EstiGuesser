@@ -55,8 +55,8 @@ const pool = new Pool({
     ssl: {
         rejectUnauthorized: false
     }
-    
-    
+
+
 });
 
 const testConnection = async () => {
@@ -160,7 +160,7 @@ app.post('/check-guess', async (req, res) => {
     const userGuess = parseInt(req.body.userInput);
     const client = await pool.connect();
     testConnection();
-    
+
 
 
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
@@ -244,7 +244,38 @@ app.get('/leaderboard', async (req, res) => {
     });
 })
 
-app.get('/play', (request, response) => {    
+function authenticate(req, res, next) {
+    // Check if the user is authenticated
+    if (req.session && req.session.username) {
+        return next();
+    } else {
+        // Redirect the user to the login page if not authenticated
+        res.redirect('/login');
+    }
+}
+
+app.post('/login', async (req, res) => {
+    const { username } = req.body;
+    // Check if the username exists in the database
+    try {
+        const existingUsername = await pool.query('SELECT * FROM usernames WHERE username = $1', [username]);
+        if (existingUsername.rows.length > 0) {
+            req.session.username = username; // Store the username in the session
+            res.redirect('/play');
+        } else {
+            // If the username doesn't exist, insert it into the database
+            await pool.query('INSERT INTO usernames (username) VALUES ($1)', [username]);
+            req.session.username = username; // Store the username in the session
+            res.redirect('/play');
+        }
+    } catch (error) {
+        console.error('Error authenticating user:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+
+app.get('/play', authenticate, (request, response) => {
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
     const message = request.query.message || ''; // Retrieve the message from the query parameter    
     const user_input = request.query.user_input;
