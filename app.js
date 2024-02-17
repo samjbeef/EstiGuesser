@@ -14,7 +14,9 @@ const { stringify } = require('querystring');
 const { request } = require('http');
 var requestIp = require('request-ip');
 const { Pool } = require('pg');
-const { getLeaderboardData, connectDB, makeTunnel2 } = require('./db')
+const { getLeaderboardData, startConnection } = require('./db')
+const { createSSHTunnel } = require('./sshTunnel');
+
 
 let options = {
     dotfiles: "ignore", //allow, deny, ignore
@@ -49,11 +51,13 @@ app.use(bodyParser.urlencoded({ extended: true }));
 let dbCon
 
 async function getDBcon() {
-    dbCon = await connectDB()
+    dbCon = await startConnection()
     // dbCon = await makeTunnel2()
     // console.log(dbCon)
-
+    const query2 = await dbCon.query('SELECT NOW()')
+    console.log(query2);
 }
+
 
 getDBcon();
 
