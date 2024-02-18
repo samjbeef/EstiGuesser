@@ -11,7 +11,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.1176.0",
+    "@aws-sdk/client-rds": "^3.516.0",
+    "@aws-sdk/rds-signer": "^3.515.0",
     "axios": "^0.27.2",
     "body-parser": "^1.20.0",
     "dotenv": "^16.3.1",
@@ -24,8 +25,11 @@
     "node-zillow": "^2.0.0",
     "nodemon": "^2.0.16",
     "pg": "^8.11.3",
+    "pg-promise": "^11.5.4",
     "postgres": "^3.2.4",
     "request-ip": "^3.3.0",
+    "ssh2": "^1.15.0",
+    "tunnel-ssh": "^5.1.2",
     "twitter-api-v2": "^1.12.3"
   }
 }
