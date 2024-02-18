@@ -14,7 +14,7 @@ const { stringify } = require('querystring');
 const { request } = require('http');
 var requestIp = require('request-ip');
 const { Pool } = require('pg');
-const { getLeaderboardData, startConnection } = require('./db')
+const { startConnection } = require('./db')
 const { createSSHTunnel } = require('./sshTunnel');
 
 
@@ -51,36 +51,37 @@ app.use(bodyParser.urlencoded({ extended: true }));
 let dbCon
 
 async function getDBcon() {
-    dbCon = await startConnection()
-    // dbCon = await makeTunnel2()
-    // console.log(dbCon)
-    const query2 = await dbCon.query('SELECT NOW()')
-    console.log(query2);
+    dbCon = await startConnection();
+    return dbCon;
 }
 
-
-getDBcon();
-
-const testConnection = async () => {
+async function getLeaderboardData(timeRange, limit, orderBy) {
+    //const dbCon = await pool.connect();
+    const client = await getDBcon();
     try {
-        const result = await dbCon.query('SELECT * FROM leaderboard');
-        console.log('Connection successful! Result:', result.rows);
-        return result;
-    } catch (e) {
-        if (e.toString().indexOf('no pg_hba.conf entry for host') !== -1) {
-            throw new Error(`Please use CUBEJS_DB_SSL=true to connect: ${e.toString()}`);
+        let query;
+        if (timeRange === 'last24Hours') {
+            // Fetch top N entries for the last 24 hours based on date_played
+            query = `SELECT name, score, timeplayed FROM leaderboard WHERE timeplayed >= NOW() - interval '24 hours' ORDER BY ${orderBy} DESC LIMIT 10`;
+        } else if (timeRange === 'allTime') {
+            // Fetch top N entries all time based on your sorting logic
+            query = `SELECT name, score, timeplayed FROM leaderboard ORDER BY ${orderBy} DESC LIMIT 25`;
+        } else {
+            throw new Error('Invalid time range specified');
         }
-        throw e;
+        const result = await client.query(query);
+        return result.rows;
+    } finally {
+        client.end();
     }
 }
 
 app.get('/leaderboard', async (req, res) => {
     try {
         // Fetch top 10 for the last 24 hours based on date_played
-        const last24HoursEntries = null; //await getLeaderboardData('sshTunnelClient', 'last24Hours', 10, 'score');
-        //console.log('this the data: ', result.rows)
+        const last24HoursEntries = await getLeaderboardData('last24Hours', 10, 'score');
         // Fetch top 25 all time based on score
-        const allTimeEntries = await getLeaderboardData(dbCon, 'allTime', 25, 'score');
+        const allTimeEntries = await getLeaderboardData('allTime', 25, 'score');
 
         res.render('layouts/leaderboard.hbs', { last24HoursEntries, allTimeEntries });
     } catch (error) {
@@ -132,8 +133,7 @@ const fetchRealEstateData = async () => {
 
 app.post('/check-guess', async (req, res) => {
     const userGuess = parseInt(req.body.userInput);
-    const client = await dbCon.connect();
-    testConnection();
+    const client = await getDBcon();
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
 
     try {
@@ -177,7 +177,7 @@ app.post('/check-guess', async (req, res) => {
         console.error('Error retrieving the target number from the database:', error);
         res.status(500).send('Internal Server Error');
     } finally {
-        client.release();
+        await client.end();
     }
 });
 

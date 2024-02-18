@@ -6,7 +6,6 @@ require('dotenv').config({
     path: path.join(__dirname, '.env')
 });
 
-
 //export
 async function createSSHTunnel(srcAddr = "localhost", srcPort = 22) {
     const tunnelOptions = {
@@ -28,10 +27,6 @@ async function createSSHTunnel(srcAddr = "localhost", srcPort = 22) {
         dstAddr: process.env.RDS_DATABASE_Host,
         dstPort: parseInt(process.env.RDS_DATABASE_Port),
     };
-    // console.log("hello", tunnelOptions);
-    // console.log("hello", sshOptions);
-    // console.log("hello", forwardOptions);
-
 
     try {
         await createTunnel(
