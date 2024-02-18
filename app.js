@@ -1,8 +1,11 @@
 const path = require('path');
+require('dotenv').config({
+    override: true,
+    path: path.join(__dirname, '.env')
+});
 const { json } = require('express');
 const express = require('express');
 const postgres = require('postgres');
-const dotenv = require('dotenv');
 const exphbs = require('express-handlebars');
 const app = express();
 const bodyParser = require('body-parser');
@@ -11,6 +14,8 @@ const { stringify } = require('querystring');
 const { request } = require('http');
 var requestIp = require('request-ip');
 const { Pool } = require('pg');
+const { startConnection } = require('./db')
+const { createSSHTunnel } = require('./sshTunnel');
 
 
 let options = {
@@ -41,54 +46,33 @@ app.set('view engine', 'hbs');
 //getting input from user
 app.use(bodyParser.urlencoded({ extended: true }));
 
-require('dotenv').config({
-    override: true,
-    path: path.join(__dirname, '.env')
-});
 
-const pool = new Pool({
-    user: process.env.RDS_DATABASE_User,
-    host: process.env.RDS_DATABASE_Host,
-    database: process.env.RDS_DATABASE,
-    password: process.env.RDS_DATABASE_Password,
-    port: process.env.RDS_DATABASE_Port,
-    ssl: {
-        rejectUnauthorized: false
-    }
-    
-    
-});
 
-const testConnection = async () => {
-    try {
-        const result = await pool.query('SELECT * FROM leaderboard');
-        console.log('Connection successful! Result:', result.rows);
-        return result;
-    } catch (e) {
-        if (e.toString().indexOf('no pg_hba.conf entry for host') !== -1) {
-            throw new Error(`Please use CUBEJS_DB_SSL=true to connect: ${e.toString()}`);
-        }
-        throw e;
-    }
+let dbCon
+
+async function getDBcon() {
+    dbCon = await startConnection();
+    return dbCon;
 }
+
 async function getLeaderboardData(timeRange, limit, orderBy) {
-    const client = await pool.connect();
+    //const dbCon = await pool.connect();
+    const client = await getDBcon();
     try {
         let query;
         if (timeRange === 'last24Hours') {
             // Fetch top N entries for the last 24 hours based on date_played
-            query = `SELECT name, score, timeplayed FROM leaderboard WHERE timeplayed >= NOW() - interval '24 hours' ORDER BY ${orderBy} DESC LIMIT $1`;
+            query = `SELECT name, score, timeplayed FROM leaderboard WHERE timeplayed >= NOW() - interval '24 hours' ORDER BY ${orderBy} DESC LIMIT 10`;
         } else if (timeRange === 'allTime') {
             // Fetch top N entries all time based on your sorting logic
-            query = `SELECT name, score, timeplayed FROM leaderboard ORDER BY ${orderBy} DESC LIMIT $1`;
+            query = `SELECT name, score, timeplayed FROM leaderboard ORDER BY ${orderBy} DESC LIMIT 25`;
         } else {
             throw new Error('Invalid time range specified');
         }
-
-        const result = await client.query(query, [limit]);
+        const result = await client.query(query);
         return result.rows;
     } finally {
-        client.release();
+        client.end();
     }
 }
 
@@ -96,7 +80,6 @@ app.get('/leaderboard', async (req, res) => {
     try {
         // Fetch top 10 for the last 24 hours based on date_played
         const last24HoursEntries = await getLeaderboardData('last24Hours', 10, 'score');
-
         // Fetch top 25 all time based on score
         const allTimeEntries = await getLeaderboardData('allTime', 25, 'score');
 
@@ -105,6 +88,7 @@ app.get('/leaderboard', async (req, res) => {
         console.error('Error fetching leaderboard data:', error);
         res.status(500).send('Internal Server Error');
     }
+
 });
 
 
@@ -158,11 +142,7 @@ const fetchRealEstateData = async (zpid) => {
 
 app.post('/check-guess', async (req, res) => {
     const userGuess = parseInt(req.body.userInput);
-    const client = await pool.connect();
-    testConnection();
-    
-
-
+    const client = await getDBcon();
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
 
     try {
@@ -206,7 +186,7 @@ app.post('/check-guess', async (req, res) => {
         console.error('Error retrieving the target number from the database:', error);
         res.status(500).send('Internal Server Error');
     } finally {
-        client.release();
+        await client.end();
     }
 });
 
