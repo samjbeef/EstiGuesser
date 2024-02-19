@@ -87,7 +87,7 @@ async function getLeaderboardData(timeRange, limit, orderBy) {
     }
 }
 
-app.get('/leaderboard', async (req, res) => {
+app.get('/leaderboard', async (request, response) => {
     try {
         // Fetch top 10 for the last 24 hours based on date_played
         const last24HoursEntries = await getLeaderboardData('last24Hours', 10, 'score');
@@ -151,8 +151,8 @@ const fetchRealEstateData = async (zpid) => {
 };
 
 
-app.post('/check-guess', async (req, res) => {
-    const userGuess = parseInt(req.body.userInput);
+app.post('/check-guess', async (request, response) => {
+    const userGuess = parseInt(request.body.userInput);
     const client = await getDBcon();
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
 
@@ -169,6 +169,18 @@ app.post('/check-guess', async (req, res) => {
 
             message = `Congratulations! You guessed the correct price in ${tries} tries. You score is${bestScore}!`;
 
+            const username = request.session.username;
+            bestScore = calculateScore(userGuess, price);
+            // const currentTime = new Date().toISOString();
+            const currentTime = new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' });
+            await client.query(`
+                INSERT INTO leaderboard (name, score, timeplayed)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (name)
+                DO UPDATE SET score = GREATEST(leaderboard.score, EXCLUDED.score)
+            `, [username, bestScore, currentTime]);
+
+
             return response.render('./layouts/play.hbs', {
                 message,
                 userGuess: userGuess,
@@ -179,11 +191,23 @@ app.post('/check-guess', async (req, res) => {
                 yearBuilt,
                 photos
             });
+
         } else {
             remainingChances--;
 
             if (remainingChances === 0) {
                 message = 'You are out of chances. Game over!';
+
+                const username = request.session.username;
+                bestScore = calculateScore(userGuess, price);
+                const currentTime = new Date().toISOString();
+                await client.query(`
+                    INSERT INTO leaderboard (name, score, timeplayed)
+                    VALUES ($1, $2, $3)
+                    ON CONFLICT (name)
+                    DO UPDATE SET score = GREATEST(leaderboard.score, EXCLUDED.score)
+                `, [username, bestScore, currentTime]);
+
 
             } else if (userGuess < targetNumber) {
                 message = `Try a higher number. Chances remaining: ${remainingChances}`;
@@ -230,7 +254,7 @@ app.get('/', async (request, response) => {
         response.status(500).send('Internal Server Error');
     }
 });
-app.get('/leaderboard', async (req, res) => {
+app.get('/leaderboard', async (request, response) => {
     response.render('./layouts/leaderboard.hbs', {
     });
 })
@@ -305,31 +329,6 @@ app.get('/signin', (request, response) => {
     response.render('./layouts/signin.hbs');
 });
 
-// app.post('/register', async (request, response) => {
-//     const { username } = req.body;
-
-//     try {
-//         const client = await pool.connect();
-
-//         // Check if the username already exists
-//         // const existingUser = await client.query('SELECT * FROM users WHERE username = $1', [username]);
-//         const existingUser = await client.query('SELECT * FROM users');
-//         console.log(existingUser);
-
-//         if (existingUser.rows.length > 0) {
-//             client.release();
-//             return response.status(400).json({ message: 'Username already exists' });
-//         }
-
-//         // If the username doesn't exist, insert it into the database
-//         const result = await client.query('INSERT INTO users (username) VALUES ($1)', [username]);
-//         client.release();
-
-//         response.status(201).json({ message: 'User registered successfully' });
-//     } catch (error) {
-//         response.status(500).json({ message: 'Internal Server Error' });
-//     }
-// });
 
 app.post('/login', async (request, response) => {
     const { username } = request.body;
