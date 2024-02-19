@@ -10,12 +10,23 @@ const exphbs = require('express-handlebars');
 const app = express();
 const bodyParser = require('body-parser');
 const axios = require("axios");
-const { stringify } = require('querystring');
+const { stringify, escape } = require('querystring');
 const { request } = require('http');
 var requestIp = require('request-ip');
 const { Pool } = require('pg');
 const { startConnection } = require('./db')
 const { createSSHTunnel } = require('./sshTunnel');
+const session = require('express-session');
+
+app.use(session({
+    secret: 'samkey', // Change this to a random string
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: false, // Set to true if using HTTPS
+        maxAge: 24 * 60 * 60 * 1000 // 1 day in milliseconds
+    }
+}));
 
 
 let options = {
@@ -83,10 +94,10 @@ app.get('/leaderboard', async (req, res) => {
         // Fetch top 25 all time based on score
         const allTimeEntries = await getLeaderboardData('allTime', 25, 'score');
 
-        res.render('layouts/leaderboard.hbs', { last24HoursEntries, allTimeEntries });
+        response.render('layouts/leaderboard.hbs', { last24HoursEntries, allTimeEntries });
     } catch (error) {
         console.error('Error fetching leaderboard data:', error);
-        res.status(500).send('Internal Server Error');
+        response.status(500).send('Internal Server Error');
     }
 
 });
@@ -158,7 +169,7 @@ app.post('/check-guess', async (req, res) => {
 
             message = `Congratulations! You guessed the correct price in ${tries} tries. You score is${bestScore}!`;
 
-            return res.render('./layouts/play.hbs', {
+            return response.render('./layouts/play.hbs', {
                 message,
                 userGuess: userGuess,
                 showPlayAgain: true,
@@ -180,11 +191,11 @@ app.post('/check-guess', async (req, res) => {
                 message = `Try a lower number. Chances remaining: ${remainingChances}`;
             }
         }
-        res.redirect(`/play?message=${encodeURIComponent(message)}&user_input=${userGuess}`);
+        response.redirect(`/play?message=${encodeURIComponent(message)}&user_input=${userGuess}`);
 
     } catch (error) {
         console.error('Error retrieving the target number from the database:', error);
-        res.status(500).send('Internal Server Error');
+        response.status(500).send('Internal Server Error');
     } finally {
         await client.end();
     }
@@ -197,7 +208,7 @@ app.use(express.json())
 //const publicDirectory = path.join(__dirname, './public');
 
 
-app.get('/', async (req, res) => {
+app.get('/', async (request, response) => {
     try {
         remainingChances = 3;
         targetNumber = undefined;
@@ -208,7 +219,7 @@ app.get('/', async (req, res) => {
         // Fetch real estate data
         await fetchRealEstateData(randomZpid);
 
-        res.render('./layouts/index.hbs', {
+        response.render('./layouts/index.hbs', {
             address: global.addressDetails.address,
             price: global.addressDetails.price,
             yearBuilt: global.addressDetails.yearBuilt,
@@ -216,15 +227,22 @@ app.get('/', async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).send('Internal Server Error');
+        response.status(500).send('Internal Server Error');
     }
 });
 app.get('/leaderboard', async (req, res) => {
-    res.render('./layouts/leaderboard.hbs', {
+    response.render('./layouts/leaderboard.hbs', {
     });
 })
 
-app.get('/play', (request, response) => {    
+app.get('/play', (request, response) => {
+    if (!request.session.username) {
+        // Redirect user to the login page if not logged in
+        return response.redirect('/signin');
+    }
+    // Render the game page
+    // response.render('./layouts/play.hbs', { username: request.session.username });
+
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
     const message = request.query.message || ''; // Retrieve the message from the query parameter    
     const user_input = request.query.user_input;
@@ -279,3 +297,63 @@ function calculateScore(userGuess, actualPrice) {
 app.listen(port, () => {
     console.log("app listening on port 3000");
 })
+
+//Username authentication below
+
+// Route for the sign-in page
+app.get('/signin', (request, response) => {
+    response.render('./layouts/signin.hbs');
+});
+
+// app.post('/register', async (request, response) => {
+//     const { username } = req.body;
+
+//     try {
+//         const client = await pool.connect();
+
+//         // Check if the username already exists
+//         // const existingUser = await client.query('SELECT * FROM users WHERE username = $1', [username]);
+//         const existingUser = await client.query('SELECT * FROM users');
+//         console.log(existingUser);
+
+//         if (existingUser.rows.length > 0) {
+//             client.release();
+//             return response.status(400).json({ message: 'Username already exists' });
+//         }
+
+//         // If the username doesn't exist, insert it into the database
+//         const result = await client.query('INSERT INTO users (username) VALUES ($1)', [username]);
+//         client.release();
+
+//         response.status(201).json({ message: 'User registered successfully' });
+//     } catch (error) {
+//         response.status(500).json({ message: 'Internal Server Error' });
+//     }
+// });
+
+app.post('/login', async (request, response) => {
+    const { username } = request.body;
+    const client = await getDBcon();
+    console.log(username);
+    try {
+        // Check if the username already exists in the database
+        const { rows } = await client.query('SELECT * FROM users WHERE username = $1', [username]);
+        // const existingUser = await client.query('SELECT * FROM users');
+        if (rows.length > 0) {
+            // If the username already exists, set an error message in the session
+            // request.session.errorMessage = 'Username is already taken. Please try again.';
+            // console.log(request.session.errorMessage);
+            return response.render('./layouts/signin.hbs', { errorMessage: 'Username is already taken. Please try again.' });
+            response.redirect('/signin'); // Redirect back to the sign-in page
+        } else {
+            // If the username is unique, store it in the database
+            await client.query('INSERT INTO users (username) VALUES ($1)', [username]);
+            request.session.username = username; // Store the username in the session
+            response.redirect('/play'); // Redirect to the dashboard or any other page
+        }
+    } catch (error) {
+        console.error('Error during sign-in:', error);
+        response.status(500).send('Internal Server Error');
+    }
+});
+

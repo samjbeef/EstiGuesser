@@ -1,0 +1,24 @@
+.container {
+    max-width: 400px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+body {
+    margin: auto;
+}
+
+input[type="text"],
+button {
+    display: block;
+    margin: 10px auto;
+}
+
+button {
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+p {
+    color: red;
+}
