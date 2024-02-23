@@ -2,3 +2,26 @@
      background-image: url("housePic.jpg");
      background-size: 100%;
  }
+
+ a:link, a:visited {
+    background-color: blue;
+    color: white;
+    padding: 14px 25px;
+    width: 100px;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+  }
+  
+  a:hover, a:active {
+    background-color: darkblue;
+  }
+
+  p.lead {
+    padding-left: 585px;
+  }
+
+  h1.display-4 {
+    font-family: monospace;
+    color: #2f4459;
+  }
