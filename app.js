@@ -176,7 +176,6 @@ app.post('/check-guess', async (request, response) => {
             await client.query(`
                 INSERT INTO leaderboard (name, score, timeplayed)
                 VALUES ($1, $2, $3)
-                DO UPDATE SET score = GREATEST(leaderboard.score, EXCLUDED.score)
             `, [username, bestScore, currentTime]);
 
 
@@ -203,7 +202,6 @@ app.post('/check-guess', async (request, response) => {
                 await client.query(`
                     INSERT INTO leaderboard (name, score, timeplayed)
                     VALUES ($1, $2, $3)
-                    DO UPDATE SET score = GREATEST(leaderboard.score, EXCLUDED.score)
                 `, [username, bestScore, currentTime]);
 
 
