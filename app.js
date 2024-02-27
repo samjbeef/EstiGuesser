@@ -176,7 +176,6 @@ app.post('/check-guess', async (request, response) => {
             await client.query(`
                 INSERT INTO leaderboard (name, score, timeplayed)
                 VALUES ($1, $2, $3)
-                ON CONFLICT (name)
                 DO UPDATE SET score = GREATEST(leaderboard.score, EXCLUDED.score)
             `, [username, bestScore, currentTime]);
 
@@ -204,7 +203,6 @@ app.post('/check-guess', async (request, response) => {
                 await client.query(`
                     INSERT INTO leaderboard (name, score, timeplayed)
                     VALUES ($1, $2, $3)
-                    ON CONFLICT (name)
                     DO UPDATE SET score = GREATEST(leaderboard.score, EXCLUDED.score)
                 `, [username, bestScore, currentTime]);
 
@@ -339,9 +337,6 @@ app.post('/login', async (request, response) => {
         const { rows } = await client.query('SELECT * FROM users WHERE username = $1', [username]);
         // const existingUser = await client.query('SELECT * FROM users');
         if (rows.length > 0) {
-            // If the username already exists, set an error message in the session
-            // request.session.errorMessage = 'Username is already taken. Please try again.';
-            // console.log(request.session.errorMessage);
             return response.render('./layouts/signin.hbs', { errorMessage: 'Username is already taken. Please try again.' });
             response.redirect('/signin'); // Redirect back to the sign-in page
         } else {
