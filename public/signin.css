@@ -10,6 +10,8 @@ body {
     /* Center vertically */
     background-color: #f0f0f0;
     /* Light gray background */
+    background-image: url("housePic2.jpeg");
+    background-size: 100%;
 }
 
 .container {
@@ -22,6 +24,7 @@ body {
     /* Rounded corners */
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     /* Drop shadow */
+    font-family: monospace;
 }
 
 .container h1 {

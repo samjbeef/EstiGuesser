@@ -1,34 +1,52 @@
-h1 {
-    text-align: center;
-    font-size: 40px;
-}
-
 body {
-    background-color: aquamarine;
+    background-color: #f8f9fa;
+    /* Light gray background */
 }
 
-div {
+.container {
+    max-width: 800px;
+    /* Limit the width of the leaderboard */
+    margin: 0 auto;
+    padding-top: 20px;
+}
+
+.jumbotron {
+    background-color: #fff;
+    /* White background */
+    border-radius: 10px;
+    /* Rounded corners */
+    padding: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    /* Soft shadow */
+}
+
+.jumbotron h1 {
     text-align: center;
-    font-size: 50px;
+}
+
+.row {
+    margin-top: 30px;
+}
+
+.col-md-6 {
+    margin-bottom: 20px;
 }
 
 ol {
-    display:inline-block;
-    text-align: left;
+    list-style: none;
+    /* Remove default list style */
+    padding-left: 0;
+    /* Remove left padding */
 }
 
-ul {
-    display:flex;
-    list-style:none;
-    padding: 0;
+ol li {
+    margin-bottom: 10px;
+    font-size: 18px;
 }
 
-li {
-    padding: 0.75rem 1rem;
-    text-align: center;
-}
-
-nav {
-    display:flex;
-    justify-content: center;
+hr {
+    border-color: #ddd;
+    /* Light gray border */
+    margin-top: 20px;
+    margin-bottom: 20px;
 }
