@@ -114,7 +114,7 @@ let bestScore = 0;
 
 // Array of pre-defined zpid values
 const zpidArray = ['23636433','2064487303','53963326','114584079','2054523516','13538594','6705911','6775238','249837692','337786678','339771029','84239996','84279135','77418705',
-'77432107','75567140','75631637', '75649898', '339427424', '8486721'];
+'77432107','75567140','75631637', '75649898', '339427424', '8486721', '338321306', '103845261','42465574', '12128418', '12130662', '37384226', '11520735', '9230261', '32208700', '57896646'];
 
 // Function to randomly choose a zpid from the array
 const getRandomZpid = () => {
@@ -138,13 +138,20 @@ const fetchRealEstateData = async (zpid) => {
 
         // Extract necessary data for rendering
         const propertyDetails = response.data.propertyDetails;
-        const address = propertyDetails.address;
-        const price = propertyDetails.price;
-        const yearBuilt = propertyDetails.yearBuilt;
-        const photos = propertyDetails.originalPhotos || [];
 
-        // Store the address and price in a global variable for later use
+        // Use 'homeStatus' field from the API to check if the property is for sale
+        const homeStatus = propertyDetails.homeStatus;
+
+        if(homeStatus === 'FOR_SALE'){
+            const address = propertyDetails.address;
+            const price = propertyDetails.price;
+            const yearBuilt = propertyDetails.yearBuilt;
+            const photos = propertyDetails.originalPhotos || [];
+
+            // Store the address and price in a global variable for later use
         global.addressDetails = { photos, address, price, yearBuilt };
+        }
+                
     } catch (error) {
         console.error(error);
         throw error;
