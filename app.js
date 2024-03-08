@@ -113,7 +113,8 @@ let bestScore = 0;
 
 
 // Array of pre-defined zpid values
-const zpidArray = ['75631637', '75630783', '75649898', '339427424'/* add more zpid values */];
+const zpidArray = ['23636433','2064487303','53963326','114584079','2054523516','13538594','6705911','6775238','249837692','337786678','339771029','84239996','84279135','77418705',
+'77432107','75567140','75631637', '75649898', '339427424', '8486721'];
 
 // Function to randomly choose a zpid from the array
 const getRandomZpid = () => {
