@@ -107,7 +107,7 @@ app.get('/leaderboard', async (request, response) => {
 //Middleware for parsing URL-encoded data in the body of incoming requests
 app.use(express.urlencoded({ extended: true }));
 const maxChances = 3; // Set the maximum number of chances
-let remainingChances = maxChances; // Initialize the remaining 
+//let remainingChances = maxChances; // Initialize the remaining 
 let targetNumber;
 let bestScore = 0;
 
@@ -171,7 +171,7 @@ app.post('/check-guess', async (request, response) => {
         let message = ''; // Initialize an empty message
 
         if (correctGuess) {
-            const tries = (maxChances - remainingChances) + 1;
+            const tries = (maxChances - request.session.remainingChances) +  1;
 
             bestScore = calculateScore(userGuess, price);
 
@@ -189,6 +189,7 @@ app.post('/check-guess', async (request, response) => {
 
             return response.render('./layouts/play.hbs', {
                 message,
+                remainingChances: request.session.remainingChances,
                 userGuess: userGuess,
                 showPlayAgain: true,
                 bestScore,
@@ -199,9 +200,9 @@ app.post('/check-guess', async (request, response) => {
             });
 
         } else {
-            remainingChances--;
+            request.session.remainingChances--;
 
-            if (remainingChances === 0) {
+            if (request.session.remainingChances === 0) {
                 message = 'You are out of chances. Game over!';
 
                 const username = request.session.username;
@@ -214,9 +215,9 @@ app.post('/check-guess', async (request, response) => {
 
 
             } else if (userGuess < targetNumber) {
-                message = `Try a higher number. Chances remaining: ${remainingChances}`;
+                message = `Try a higher number. Chances remaining: ${request.session.remainingChances}`;
             } else {
-                message = `Try a lower number. Chances remaining: ${remainingChances}`;
+                message = `Try a lower number. Chances remaining: ${request.session.remainingChances}`;
             }
         }
         response.redirect(`/play?message=${encodeURIComponent(message)}&user_input=${userGuess}`);
@@ -238,7 +239,7 @@ app.use(express.json())
 
 app.get('/', async (request, response) => {
     try {
-        remainingChances = 3;
+        request.session.remainingChances = 3;
         targetNumber = undefined;
 
         // Get a random zpid from the array
@@ -274,7 +275,7 @@ app.get('/play', (request, response) => {
     const { address, price, yearBuilt, photos } = global.addressDetails || {};
     const message = request.query.message || ''; // Retrieve the message from the query parameter    
     const user_input = request.query.user_input;
-    const remainingChancesEqualsZero = remainingChances === undefined || remainingChances === 0;
+    const remainingChancesEqualsZero = request.session.remainingChances === undefined || request.session.remainingChances === 0;
     // Check if remaining chances are zero
     if (remainingChancesEqualsZero) {
         // Display the correct guess message here
