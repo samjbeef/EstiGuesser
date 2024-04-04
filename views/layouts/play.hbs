@@ -17,7 +17,7 @@
         }
     </style>
 
-    <center>
+    <center class="rules">
         <h1>Here are images of a property recently sold in the United States with the address and year given below.
             You will be given three chances to guess the price of the property.
             Your score will be based on your strength of guess.
@@ -36,7 +36,7 @@
         </div>
     </center>
 
-    <center>
+    <center class="info">
         <h1>
             <p>Address: {{address.streetAddress}}. {{address.city}}, {{address.state}}</p>
         </h1>
@@ -47,12 +47,12 @@
 
     <p>Price: {{price}}</p>
 
-    <center>
+    <center class="estimate">
         <form action="/check-guess" method="POST">
             <input type="hidden" name="targetNumber" value="{{targetNumber}}">
             <h1>Enter your Estimate Below!</h1></br>
             <input type="number" name="userInput" />
-            <input type="submit" value="submit">
+            <input type="submit" value="Submit">
         </form>
     </center>
     <center>

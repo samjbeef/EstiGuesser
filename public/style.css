@@ -2,3 +2,21 @@ body {
     background-image: url("housePic.jpg");
     background-size: 100%;
 }
+
+a:link, a:visited {
+   color: white;
+   padding: 14px 25px;
+   width: 150px;
+   text-align: center;
+   text-decoration: none;
+   display: block;
+ }
+
+ p.lead {
+   padding-left: 585px;
+ }
+
+ h1.display-4 {
+   font-family: monospace;
+   color: #2f4459;
+ }

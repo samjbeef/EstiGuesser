@@ -1,9 +1,21 @@
 body {
-    background-image: url("playBackground.jpg");
+    background-image: url("playBackground2.jpg");
+    background-size: 100%;
+    background-position: 50%;
 }
 
 
-h1 {
-    color: white;
-    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+.rules {
+    color:coral;
+    font-family: monospace;
+}
+
+.info {
+    color:antiquewhite;
+    font-family: monospace;
+}
+
+.estimate {
+    color:antiquewhite;
+    font-family: monospace;
 }
