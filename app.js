@@ -17,6 +17,8 @@ const { Pool } = require('pg');
 const { startConnection } = require('./db')
 const { createSSHTunnel } = require('./sshTunnel');
 const session = require('express-session');
+const Filter = require('bad-words');
+const filter = new Filter();
 
 app.use(session({
     secret: 'samkey', // Change this to a random string
@@ -377,15 +379,20 @@ app.post('/login', async (request, response) => {
     const { username } = request.body;
     const client = await getDBcon();
     console.log(username);
+
     try {
         // Check if the username already exists in the database
         const { rows } = await client.query('SELECT * FROM users WHERE username = $1', [username]);
-        // const existingUser = await client.query('SELECT * FROM users');
+
         if (rows.length > 0) {
             return response.render('./layouts/signin.hbs', { errorMessage: 'Username is already taken. Please try again.' });
-            response.redirect('/signin'); // Redirect back to the sign-in page
         } else {
-            // If the username is unique, store it in the database
+            // Check if the username contains any bad words
+            if (filter.isProfane(username)) {
+                return response.render('./layouts/signin.hbs', { errorMessage: 'Username contains inappropriate language. Please try again.' });
+            }
+
+            // If the username is unique and does not contain any bad words, store it in the database
             await client.query('INSERT INTO users (username) VALUES ($1)', [username]);
             request.session.username = username; // Store the username in the session
             response.redirect('/play'); // Redirect to the dashboard or any other page
