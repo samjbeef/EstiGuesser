@@ -113,20 +113,39 @@ let bestScore = 0;
 
 
 // Array of pre-defined zpid values
-const zpidArray = ['23636433','2064487303','53963326','114584079','2054523516','13538594','6705911','6775238','249837692','337786678','339771029','84239996','84279135','77418705',
-'77432107','75567140','75631637', '75649898', '339427424', '8486721', '338321306', '103845261','42465574', '12128418', '12130662', '37384226', '11520735', '9230261', '32208700', '57896646'];
+// const zpidArray = ['23636433','2064487303','53963326','114584079','2054523516','13538594','6705911','6775238','249837692','337786678','339771029','84239996','84279135','77418705',
+// '77432107','75567140','75631637', '75649898', '339427424', '8486721', '338321306', '103845261','42465574', '12128418', '12130662', '37384226', '11520735', '9230261', '32208700', '57896646'];
 
-// Function to randomly choose a zpid from the array
-const getRandomZpid = () => {
-    const randomIndex = Math.floor(Math.random() * zpidArray.length);
-    return zpidArray[randomIndex];
+// // Function to randomly choose a zpid from the array
+// const getRandomZpid = () => {
+//     const randomIndex = Math.floor(Math.random() * zpidArray.length);
+//     return zpidArray[randomIndex];
+// };
+const fetchRandomAddress = async () => {
+    try {
+        // Execute the SQL query to select a random address
+        const client = await getDBcon();
+        const result = await client.query('SELECT address FROM properties ORDER BY RANDOM() LIMIT 1;');
+        // Extract the random address from the query result
+        let randomAddress = result.rows[0].address;
+        // Trim single quotes from the address string
+        randomAddress = randomAddress.replace(/^'|'$/g, '');
+        return randomAddress;
+    } catch (error) {
+        console.error('Error fetching random address:', error);
+        throw error;
+    }
 };
 
-const fetchRealEstateData = async (zpid) => {
+
+
+const fetchRealEstateData = async (randomAddress) => {
+    // console.log('fetch real data addy', randomAddress);
+    // randomAddress = '4421 S   BERNITA DR, 67217, KS';
     const options = {
         method: 'GET',
-        url: 'https://zillow-working-api.p.rapidapi.com/pro/byzpid',
-        params: { zpid },
+        url: 'https://zillow-working-api.p.rapidapi.com/pro/byaddress',
+        params: { propertyaddress: randomAddress },
         headers: {
             'X-RapidAPI-Key': process.env.API_KEY,
             'X-RapidAPI-Host': 'zillow-working-api.p.rapidapi.com',
@@ -136,22 +155,41 @@ const fetchRealEstateData = async (zpid) => {
     try {
         const response = await axios.request(options);
 
+        console.log(response);
         // Extract necessary data for rendering
         const propertyDetails = response.data.propertyDetails;
+        console.log(propertyDetails);
 
         // Use 'homeStatus' field from the API to check if the property is for sale
-        const homeStatus = propertyDetails.homeStatus;
+        // const homeStatus = propertyDetails.homeStatus;
 
-        if(homeStatus === 'FOR_SALE'){
-            const address = propertyDetails.address;
-            const price = propertyDetails.price;
-            const yearBuilt = propertyDetails.yearBuilt;
-            const photos = propertyDetails.originalPhotos || [];
+        const homeType = propertyDetails.homeType;
+        const address = propertyDetails.address;
+        const price = propertyDetails.price;
+        const yearBuilt = propertyDetails.yearBuilt;
+        const photos = propertyDetails.originalPhotos || [];
 
+        // Store the address and price in a global variable for later use
+        global.addressDetails = { photos, address, price, yearBuilt, homeType };
+        console.log(address);
+
+
+        if (price > 0 || photos.length > 15 || homeType === 'SINGLE_FAMILY') {
             // Store the address and price in a global variable for later use
-        global.addressDetails = { photos, address, price, yearBuilt };
+            global.addressDetails = { photos, address, price, yearBuilt };
+        } else {
+            // Execute SQL statement to remove the corresponding row from the properties table
+            const client = await getDBcon();
+            try {
+                await client.query('DELETE FROM properties WHERE address = $1', [randomAddress]);
+                console.log(`Property with address '${randomAddress}' removed from properties table.`);
+            } catch (error) {
+                console.error('Error removing property from properties table:', error);
+            } finally {
+                await client.end();
+            }
         }
-                
+
     } catch (error) {
         console.error(error);
         throw error;
@@ -171,7 +209,7 @@ app.post('/check-guess', async (request, response) => {
         let message = ''; // Initialize an empty message
 
         if (correctGuess) {
-            const tries = (maxChances - request.session.remainingChances) +  1;
+            const tries = (maxChances - request.session.remainingChances) + 1;
 
             bestScore = calculateScore(userGuess, price);
 
@@ -243,10 +281,10 @@ app.get('/', async (request, response) => {
         targetNumber = undefined;
 
         // Get a random zpid from the array
-        const randomZpid = getRandomZpid();
+        const randomAddress = await fetchRandomAddress();
 
         // Fetch real estate data
-        await fetchRealEstateData(randomZpid);
+        await fetchRealEstateData(randomAddress);
 
         response.render('./layouts/index.hbs', {
             address: global.addressDetails.address,
