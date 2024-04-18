@@ -19,6 +19,8 @@ const { createSSHTunnel } = require('./sshTunnel');
 const session = require('express-session');
 const Filter = require('bad-words');
 const filter = new Filter();
+const throttledQueue = require('throttled-queue');
+const throttle = throttledQueue(3, 1000);
 
 app.use(session({
     secret: 'samkey', // Change this to a random string
@@ -142,56 +144,43 @@ const fetchRandomAddress = async () => {
 
 
 const fetchRealEstateData = async (randomAddress) => {
-    // console.log('fetch real data addy', randomAddress);
-    // randomAddress = '4421 S   BERNITA DR, 67217, KS';
-    const options = {
-        method: 'GET',
-        url: 'https://zillow-working-api.p.rapidapi.com/pro/byaddress',
-        params: { propertyaddress: randomAddress },
-        headers: {
-            'X-RapidAPI-Key': process.env.API_KEY,
-            'X-RapidAPI-Host': 'zillow-working-api.p.rapidapi.com',
-        },
-    };
-
     try {
-        const response = await axios.request(options);
+        await throttle(async () => {
+            const options = {
+                method: 'GET',
+                url: 'https://zillow-working-api.p.rapidapi.com/pro/byaddress',
+                params: { propertyaddress: randomAddress },
+                headers: {
+                    'X-RapidAPI-Key': process.env.API_KEY,
+                    'X-RapidAPI-Host': 'zillow-working-api.p.rapidapi.com',
+                },
+            };
 
-        console.log(response);
-        // Extract necessary data for rendering
-        const propertyDetails = response.data.propertyDetails;
-        console.log(propertyDetails);
+            const response = await axios.request(options);
+            const propertyDetails = response.data.propertyDetails;
 
-        // Use 'homeStatus' field from the API to check if the property is for sale
-        // const homeStatus = propertyDetails.homeStatus;
+            const homeType = propertyDetails.homeType;
+            const address = propertyDetails.address;
+            const price = propertyDetails.price;
+            const yearBuilt = propertyDetails.yearBuilt;
+            const photos = propertyDetails.originalPhotos || [];
 
-        const homeType = propertyDetails.homeType;
-        const address = propertyDetails.address;
-        const price = propertyDetails.price;
-        const yearBuilt = propertyDetails.yearBuilt;
-        const photos = propertyDetails.originalPhotos || [];
+            global.addressDetails = { photos, address, price, yearBuilt, homeType };
 
-        // Store the address and price in a global variable for later use
-        global.addressDetails = { photos, address, price, yearBuilt, homeType };
-        console.log(address);
-
-
-        if (price > 0 || photos.length > 15 || homeType === 'SINGLE_FAMILY') {
-            // Store the address and price in a global variable for later use
-            global.addressDetails = { photos, address, price, yearBuilt };
-        } else {
-            // Execute SQL statement to remove the corresponding row from the properties table
-            const client = await getDBcon();
-            try {
-                await client.query('DELETE FROM properties WHERE address = $1', [randomAddress]);
-                console.log(`Property with address '${randomAddress}' removed from properties table.`);
-            } catch (error) {
-                console.error('Error removing property from properties table:', error);
-            } finally {
-                await client.end();
+            if (price > 0 || photos.length > 15 || homeType === 'SINGLE_FAMILY') {
+                global.addressDetails = { photos, address, price, yearBuilt };
+            } else {
+                const client = await getDBcon();
+                try {
+                    await client.query('DELETE FROM properties WHERE address = $1', [randomAddress]);
+                    console.log(`Property with address '${randomAddress}' removed from properties table.`);
+                } catch (error) {
+                    console.error('Error removing property from properties table:', error);
+                } finally {
+                    await client.end();
+                }
             }
-        }
-
+        });
     } catch (error) {
         console.error(error);
         throw error;
