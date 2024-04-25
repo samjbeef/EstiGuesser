@@ -1,22 +1,41 @@
 body {
-    background-image: url("housePic.jpg");
-    background-size: 100%;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  /* background-image: url("background5.jpg"); */
+  background-image: url("House20Lightness-97Bright-84Contr-15xxYY.png");
+  background-size: cover;
+  background-position: center;
+  position: relative;
 }
 
-a:link, a:visited {
-   color: white;
-   padding: 14px 25px;
-   width: 150px;
-   text-align: center;
-   text-decoration: none;
-   display: block;
- }
+body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* background-color: rgba(0, 0, 0, 0.8); */
+  z-index: -1;
+}
 
- p.lead {
-   padding-left: 585px;
- }
+a:link,
+a:visited {
+  color: white;
+  padding: 14px 25px;
+  width: 150px;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+}
 
- h1.display-4 {
-   font-family: monospace;
-   color: #2f4459;
- }
+p.lead {
+  /* padding-left: 585px; */
+  /* align-items: center; */
+}
+
+h1.display-4 {
+  font-family: monospace;
+  color: #2f4459;
+}

@@ -2,7 +2,8 @@ body {
     margin: 0;
     padding: 0;
     height: 100vh;
-    background-image: url("background5.jpg");
+    /* background-image: url("background5.jpg"); */
+    background-image: url("House20Lightness-97Bright-84Contr-15xxYY.png");
     background-size: cover;
     background-position: center;
     position: relative;
@@ -15,15 +16,102 @@ body::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
+    /* background-color: rgba(0, 0, 0, 0.8); */
     z-index: -1;
 }
 
 .rules,
 .info,
 .estimate {
-    color: white;
-    font-family: monospace;
+    color: black;
     position: relative;
     z-index: 1;
+}
+
+
+.xxximage-container {
+    /* height: 500px; */
+    /* flex-wrap: nowrap; */
+    display: flexbox;
+    overflow: scroll;
+    margin: 0;
+}
+
+.middle-section img {
+    max-width: 100%;
+    /* Ensures image does not exceed container width */
+    max-height: 100%;
+    /* Ensures image does not exceed container height */
+    height: auto;
+    /* Allows the image to resize proportionally */
+    margin: 3px;
+    margin-right: 3px;
+    /* Add spacing between images */
+}
+
+/* height:500px;width:850px;overflow:scroll; */
+/* If the screen size is 601px or more, set the font-size of <div> to 80px */
+@media only screen and (min-width: 601px) {
+    h3 {
+        font-size: 20px;
+        color: black;
+    }
+
+    p {
+        font-size: 22px;
+    }
+
+    .image-container {
+        height: 700px;
+    }
+}
+
+/* If the screen size is 600px or less, set the font-size of <div> to 30px */
+@media only screen and (max-width: 600px) {
+    h3 {
+        font-size: 10px;
+        color: black;
+    }
+
+    .image-container {
+        height: 490px;
+    }
+
+}
+
+.top-section {
+    height: 195px;
+    /* background-color: #ccc; */
+    position: relative;
+    /* top: 0;
+    left: 0;
+    right: 0; */
+    z-index: 1;
+    line-height: 120%;
+
+}
+
+.middle-section {
+    height: 77%;
+    overflow-y: auto;
+    /* background-color: #ddd; */
+    /* padding-top: 10%;
+    padding-bottom: 15%; */
+    z-index: 1;
+
+    display: flexbox;
+    /* flex-wrap: nowrap; */
+    overflow: scroll;
+    margin: 0;
+}
+
+.bottom-section {
+    height: 10%;
+    /* background-color: #aaa; */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    line-height: 120%;
 }

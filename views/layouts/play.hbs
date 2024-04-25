@@ -4,80 +4,74 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>Bootstrap demo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
     <link rel="stylesheet" href="play.css">
+    {{!--
+    <link rel="stylesheet" href="style.css"> --}}
 </head>
 
 <body>
-    <style>
-        h1 {
-            font-size: 30px;
-        }
-    </style>
 
-    <center class="rules">
-        <h1>Here are images of a property recently sold in the United States with the address and year given below.
-            You will be given three chances to guess the price of the property.
-            Your score will be based on your strength of guess.
-        </h1>
-    </center>
+    <div class="top-section">
+        {{!-- <center>
+            <h3>Here are images of a property recently sold in the United States with the address and year given below.
+                You will be given three chances to guess the price of the property.
+                Your score will be based on your strength of guess.
+            </h3>
+        </center> --}}
+        <center>
+            <p>
+                Address: {{address.streetAddress}}. {{address.city}}, {{address.state}}<br>
+                Year Built: {{yearBuilt}}
+            </p>
+        </center>
 
-    <center>
-        <div style="height:500px;width:850px;overflow:scroll;">
+        <center class="estimate">
+            <form action="/check-guess" method="POST">
+                <input type="hidden" name="targetNumber" value="{{targetNumber}}">
+                <p>Enter your Estimate Below!</p>
+                <input type="number" name="userInput" />
+                <input type="submit" value="Submit">
+            </form>
+        </center>
+        <center>
+            <p>{{message}}</p>
+        </center>
+
+        <center>
+            <p>{{ stuff }}</p>
+        </center>
+
+        <center>
+            <!-- Conditionally show the "Play Again" button -->
+            {{#if showPlayAgain}}
+            <form action="/?reset=true" method="GET">
+                <input type="submit" value="Play Again" onclick="redirectToHome(event)">
+            </form>
+            {{/if}}
+        </center>
+    </div>
+
+    <div class="middle-section">
+        <center>
             {{#if photos}}
             {{#each photos}}
-            <img src="{{this.mixedSources.jpeg.[0].url}}" width="{{this.mixedSources.jpeg.[0].width}}" alt="Photo">
+            <img src="{{this.mixedSources.jpeg.[0].url}}" alt="Photo"><br>
             {{/each}}
             {{else}}
             <p>No photos available.</p>
             {{/if}}
-        </div>
-    </center>
+        </center>
+    </div>
 
-    <center class="info">
-        <h1>
-            <p>Address: {{address.streetAddress}}. {{address.city}}, {{address.state}}</p>
-        </h1>
-        <h1>
-            <p>Year Built: {{yearBuilt}}</p>
-        </h1>
-    </center>
 
-    <p>Price: {{price}}</p>
-
-    <center class="estimate">
-        <form action="/check-guess" method="POST">
-            <input type="hidden" name="targetNumber" value="{{targetNumber}}">
-            <h1>Enter your Estimate Below!</h1></br>
-            <input type="number" name="userInput" />
-            <input type="submit" value="Submit">
-        </form>
-    </center>
-    <center>
-        <br></br>
-        <h1>
-            <p>{{message}}</p>
-        </h1>
-    </center>
-
-    <center>
-        <h1>{{ stuff }}</h1>
-    </center>
-
-    <center>
-        <!-- Conditionally show the "Play Again" button -->
-        {{#if showPlayAgain}}
-        <form action="/?reset=true" method="GET">
-            <input type="submit" value="Play Again" onclick="redirectToHome(event)">
-        </form>
-        {{/if}}
-    </center>
     <script>
         function redirectToHome(event) {
             //redirect to home page when button is clicked    
-            event.preventDefault    
+            event.preventDefault
             window.location.href = "/";
         }
     </script>
