@@ -22,7 +22,7 @@
             <div class="row">
                 <!-- All Time Leaderboard on the left -->
                 <div class="col-md-6 order-md-1 order-2">
-                    <h2>All Time Leaderboard (Top 25)</h2>
+                    <h2>All Time Top 25</h2>
                     <ol>
                         {{#each allTimeEntries}}
                         <li>{{@index}}. {{this.name}} - Score: {{this.score}}</li>
@@ -32,7 +32,7 @@
 
                 <!-- Last 24 Hours Leaderboard on the right -->
                 <div class="col-md-6 order-md-2 order-1">
-                    <h2>Last 24 Hours Leaderboard (Top 10)</h2>
+                    <h2>Last 24 Hours</h2>
                     <ol>
                         {{#each last24HoursEntries}}
                         <li>{{@index}}. {{this.name}} - Score: {{this.score}}</li>
