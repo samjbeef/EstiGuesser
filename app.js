@@ -125,8 +125,10 @@ let bestScore = 0;
 //     const randomIndex = Math.floor(Math.random() * zpidArray.length);
 //     return zpidArray[randomIndex];
 // };
-const fetchRandomAddress = async () => {
+const fetchRandomAddress = async (request) => {
     try {
+        console.log("fetchRandomAddr:  " + request.session.id);
+
         // Execute the SQL query to select a random address
         const client = await getDBcon();
         const result = await client.query('SELECT address FROM properties ORDER BY RANDOM() LIMIT 1;');
@@ -143,8 +145,10 @@ const fetchRandomAddress = async () => {
 
 
 
-const fetchRealEstateData = async (randomAddress) => {
+const fetchRealEstateData = async (request, randomAddress) => {
     try {
+        console.log("fetchREData:  " + request.session.id);
+
         await throttle(async () => {
             const options = {
                 method: 'GET',
@@ -165,10 +169,10 @@ const fetchRealEstateData = async (randomAddress) => {
             const yearBuilt = propertyDetails.yearBuilt;
             const photos = propertyDetails.originalPhotos || [];
 
-            global.addressDetails = { photos, address, price, yearBuilt, homeType };
-
+            request.session.addressDetails = { photos, address, price, yearBuilt, homeType };
+            console.log(address);
             if (price > 0 || photos.length > 15 || homeType === 'SINGLE_FAMILY') {
-                global.addressDetails = { photos, address, price, yearBuilt };
+                request.session.addressDetails = { photos, address, price, yearBuilt };
             } else {
                 const client = await getDBcon();
                 try {
@@ -189,9 +193,11 @@ const fetchRealEstateData = async (randomAddress) => {
 
 
 app.post('/check-guess', async (request, response) => {
+    const userid = request.session.id;
     const userGuess = parseInt(request.body.userInput);
     const client = await getDBcon();
-    const { address, price, yearBuilt, photos } = global.addressDetails || {};
+    const { address, price, yearBuilt, photos } = request.session.addressDetails || {};
+
 
     try {
         const correctGuess = userGuess === price;
@@ -268,20 +274,22 @@ app.use(express.json())
 
 app.get('/', async (request, response) => {
     try {
+        console.log("root:  " + request.session.id);
+
         request.session.remainingChances = 3;
         targetNumber = undefined;
 
         // Get a random zpid from the array
-        const randomAddress = await fetchRandomAddress();
+        const randomAddress = await fetchRandomAddress(request);
 
         // Fetch real estate data
-        await fetchRealEstateData(randomAddress);
+        await fetchRealEstateData(request, randomAddress);
 
         response.render('./layouts/index.hbs', {
-            address: global.addressDetails.address,
-            price: global.addressDetails.price,
-            yearBuilt: global.addressDetails.yearBuilt,
-            photos: global.addressDetails.photos
+            address: request.session.addressDetails.address,
+            price: request.session.addressDetails.price,
+            yearBuilt: request.session.addressDetails.yearBuilt,
+            photos: request.session.addressDetails.photos
         });
     } catch (error) {
         console.error(error);
@@ -295,13 +303,13 @@ app.get('/leaderboard', async (request, response) => {
 
 app.get('/play', (request, response) => {
     if (!request.session.username) {
+        // console.log(session.addressDetails.address);
         // Redirect user to the login page if not logged in
         return response.redirect('/signin');
     }
     // Render the game page
     // response.render('./layouts/play.hbs', { username: request.session.username });
-
-    const { address, price, yearBuilt, photos } = global.addressDetails || {};
+    const { address, price, yearBuilt, photos } = request.session.addressDetails || {};
     const message = request.query.message || ''; // Retrieve the message from the query parameter    
     const user_input = request.query.user_input;
     const remainingChancesEqualsZero = request.session.remainingChances === undefined || request.session.remainingChances === 0;
@@ -360,6 +368,7 @@ app.listen(port, () => {
 
 // Route for the sign-in page
 app.get('/signin', (request, response) => {
+
     response.render('./layouts/signin.hbs');
 });
 
@@ -368,6 +377,7 @@ app.post('/login', async (request, response) => {
     const { username } = request.body;
     const client = await getDBcon();
     console.log(username);
+
 
     try {
         // Check if the username already exists in the database
