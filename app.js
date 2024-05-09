@@ -506,5 +506,8 @@ app.post('/login', async (request, response) => {
         console.error('Error during sign-in:', error);
         response.status(500).send('Internal Server Error');
     }
+    finally {
+        client.end;
+    }
 });
 
