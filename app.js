@@ -7,6 +7,7 @@ const { json } = require('express');
 const express = require('express');
 const postgres = require('postgres');
 const exphbs = require('express-handlebars');
+var handlebarssam = require('handlebars');
 const app = express();
 const bodyParser = require('body-parser');
 const axios = require("axios");
@@ -97,7 +98,9 @@ app.get('/leaderboard', async (request, response) => {
         const last24HoursEntries = await getLeaderboardData('last24Hours', 10, 'score');
         // Fetch top 25 all time based on score
         const allTimeEntries = await getLeaderboardData('allTime', 25, 'score');
-
+        handlebarssam.registerHelper("inc", function (value, options) {
+            return parseInt(value) + 1;
+        });
         response.render('layouts/leaderboard.hbs', { last24HoursEntries, allTimeEntries });
     } catch (error) {
         console.error('Error fetching leaderboard data:', error);
@@ -197,6 +200,7 @@ app.post('/check-guess', async (request, response) => {
     const userGuess = parseInt(request.body.userInput);
     const client = await getDBcon();
     const { address, price, yearBuilt, photos } = request.session.addressDetails || {};
+    console.log('in the post: ', request.session.addressDetails)
 
 
     try {
@@ -236,6 +240,8 @@ app.post('/check-guess', async (request, response) => {
 
         } else {
             request.session.remainingChances--;
+            console.log(request.session.remainingChances);
+            console.log('username in the /checkguess', request.session.username);
 
             if (request.session.remainingChances === 0) {
                 message = 'You are out of chances. Game over!';
@@ -274,85 +280,185 @@ app.use(express.json())
 
 app.get('/', async (request, response) => {
     try {
-        console.log("root:  " + request.session.id);
-
-        request.session.remainingChances = 3;
-        targetNumber = undefined;
-
-        // Get a random zpid from the array
-        const randomAddress = await fetchRandomAddress(request);
-
-        // Fetch real estate data
-        await fetchRealEstateData(request, randomAddress);
-
-        response.render('./layouts/index.hbs', {
-            address: request.session.addressDetails.address,
-            price: request.session.addressDetails.price,
-            yearBuilt: request.session.addressDetails.yearBuilt,
-            photos: request.session.addressDetails.photos
-        });
+        response.render('./layouts/index.hbs');
     } catch (error) {
         console.error(error);
         response.status(500).send('Internal Server Error');
     }
+    // try {
+    //     console.log("root:  " + request.session.id);
+
+    //     request.session.remainingChances = 3;
+    //     targetNumber = undefined;
+
+    //     // Get a random zpid from the array
+    //     const randomAddress = await fetchRandomAddress(request);
+
+    //     // Fetch real estate data
+    //     await fetchRealEstateData(request, randomAddress);
+
+    //     response.render('./layouts/index.hbs', {
+    //         address: request.session.addressDetails.address,
+    //         price: request.session.addressDetails.price,
+    //         yearBuilt: request.session.addressDetails.yearBuilt,
+    //         photos: request.session.addressDetails.photos
+    //     });
+    // } catch (error) {
+    //     console.error(error);
+    //     response.status(500).send('Internal Server Error');
+    // }
 });
 app.get('/leaderboard', async (request, response) => {
     response.render('./layouts/leaderboard.hbs', {
     });
 })
 
-app.get('/play', (request, response) => {
-    if (!request.session.username) {
-        // console.log(session.addressDetails.address);
-        // Redirect user to the login page if not logged in
-        return response.redirect('/signin');
-    }
-    // Render the game page
-    // response.render('./layouts/play.hbs', { username: request.session.username });
-    const { address, price, yearBuilt, photos } = request.session.addressDetails || {};
-    const message = request.query.message || ''; // Retrieve the message from the query parameter    
-    const user_input = request.query.user_input;
-    const remainingChancesEqualsZero = request.session.remainingChances === undefined || request.session.remainingChances === 0;
-    // Check if remaining chances are zero
-    if (remainingChancesEqualsZero) {
-        // Display the correct guess message here
-        const correctGuess = targetNumber || 0; // Get the correct guess from targetNumber
-        const formattedCorrectGuess = correctGuess.toLocaleString('en-US', {
-            style: 'currency',
-            currency: 'USD',
-        });
-
-        //Score logic
-        const score = calculateScore(user_input, correctGuess);
-
-        // Update the best score if the current score is higher
-        if (score > bestScore) {
-            bestScore = score;
+app.get('/play', async (request, response) => {
+    console.log()
+    try {
+        // Check if the user is logged in
+        if (!request.session.username) {
+            // Redirect user to the login page if not logged in
+            return response.redirect('/signin');
         }
 
-        response.render('./layouts/play.hbs', {
-            message: `The correct price was ${formattedCorrectGuess}. Your score is ${bestScore}.`,
-            remainingChancesEqualsZero,
-            showPlayAgain: true,
-            bestScore,
-            address,
-            price,
-            yearBuilt,
-            photos
-        });
+        // // Reset game state
+        // request.session.remainingChances = 3;
+        // targetNumber = undefined;
 
-    } else {
-        // Display the regular game interface with the message
-        response.render('./layouts/play.hbs', {
-            message,
-            remainingChancesEqualsZero,
-            address,
-            price,
-            yearBuilt,
-            photos
-        });
+        // Get a random address
+        if (typeof request.session.addressDetails === 'undefined' || request.session.addressDetails === null) {
+            // If addressDetails is undefined, fetch a random address and real estate data
+            const randomAddress = await fetchRandomAddress(request);
+            await fetchRealEstateData(request, randomAddress);
+            request.session.remainingChances = 3;
+            targetNumber = undefined;
+        }
+        // Retrieve data from session
+        const { address, price, yearBuilt, photos } = request.session.addressDetails || {};
+        const message = request.query.message || ''; // Retrieve the message from the query parameter    
+        const user_input = request.query.user_input;
+        const remainingChancesEqualsZero = request.session.remainingChances === undefined || request.session.remainingChances === 0;
+        // }
+
+        // Check if remaining chances are zero
+        if (remainingChancesEqualsZero) {
+            request.session.addressDetails = null;
+            // Display the correct guess message here
+            const correctGuess = targetNumber || 0; // Get the correct guess from targetNumber
+            const formattedCorrectGuess = correctGuess.toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'USD',
+            });
+
+            // Calculate score
+            const score = calculateScore(user_input, correctGuess);
+
+            // Update the best score if the current score is higher
+            if (score > bestScore) {
+                bestScore = score;
+            }
+            return response.render('./layouts/play.hbs', {
+                message: `The correct price was ${formattedCorrectGuess}. Your score is ${bestScore}.`,
+                remainingChancesEqualsZero,
+                showPlayAgain: true,
+                bestScore,
+                address,
+                price,
+                yearBuilt,
+                photos
+            });
+
+        } else {
+            // Display the regular game interface with the message
+            return response.render('./layouts/play.hbs', {
+                message,
+                remainingChancesEqualsZero,
+                address,
+                price,
+                yearBuilt,
+                photos
+            });
+        }
+    } catch (error) {
+        console.error(error);
+        return response.status(500).send('Internal Server Error');
     }
 });
+
+//     if (!request.session.username) {
+//         // console.log(session.addressDetails.address);
+//         // Redirect user to the login page if not logged in
+//         return response.redirect('/signin');
+//     }
+//     try {
+//         console.log("root:  " + request.session.id);
+
+//         request.session.remainingChances = 3;
+//         targetNumber = undefined;
+
+//         // Get a random zpid from the array
+//         const randomAddress = await fetchRandomAddress(request);
+
+//         // Fetch real estate data
+//         await fetchRealEstateData(request, randomAddress);
+
+//         response.render('./layouts/play.hbs', {
+//             address: request.session.addressDetails.address,
+//             price: request.session.addressDetails.price,
+//             yearBuilt: request.session.addressDetails.yearBuilt,
+//             photos: request.session.addressDetails.photos
+//         });
+//     } catch (error) {
+//         console.error(error);
+//         response.status(500).send('Internal Server Error');
+//     }
+//     // Render the game page
+//     // response.render('./layouts/play.hbs', { username: request.session.username });
+//     const { address, price, yearBuilt, photos } = request.session.addressDetails || {};
+//     const message = request.query.message || ''; // Retrieve the message from the query parameter    
+//     const user_input = request.query.user_input;
+//     const remainingChancesEqualsZero = request.session.remainingChances === undefined || request.session.remainingChances === 0;
+//     // Check if remaining chances are zero
+//     if (remainingChancesEqualsZero) {
+//         // Display the correct guess message here
+//         const correctGuess = targetNumber || 0; // Get the correct guess from targetNumber
+//         const formattedCorrectGuess = correctGuess.toLocaleString('en-US', {
+//             style: 'currency',
+//             currency: 'USD',
+//         });
+
+//         //Score logic
+//         const score = calculateScore(user_input, correctGuess);
+
+//         // Update the best score if the current score is higher
+//         if (score > bestScore) {
+//             bestScore = score;
+//         }
+
+//         response.render('./layouts/play.hbs', {
+//             message: `The correct price was ${formattedCorrectGuess}. Your score is ${bestScore}.`,
+//             remainingChancesEqualsZero,
+//             showPlayAgain: true,
+//             bestScore,
+//             address,
+//             price,
+//             yearBuilt,
+//             photos
+//         });
+
+//     } else {
+//         // Display the regular game interface with the message
+//         response.render('./layouts/play.hbs', {
+//             message,
+//             remainingChancesEqualsZero,
+//             address,
+//             price,
+//             yearBuilt,
+//             photos
+//         });
+//     }
+// });
 
 function calculateScore(userGuess, actualPrice) {
     const priceDifference = Math.abs(actualPrice - userGuess);
