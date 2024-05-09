@@ -1,4 +1,8 @@
 <!DOCTYPE html>
+{{!-- {{
+Handlebars.registerHelper("inc", function (value, options) {
+return parseInt(value) + 1;
+}}); --}}
 <html lang="en">
 
 <head>
@@ -25,7 +29,7 @@
                     <h2>All Time Top 25</h2>
                     <ol>
                         {{#each allTimeEntries}}
-                        <li>{{@index}}. {{this.name}} - Score: {{this.score}}</li>
+                        <li>{{inc @index}}. {{this.name}} - Score: {{this.score}}</li>
                         {{/each}}
                     </ol>
                 </div>
@@ -35,7 +39,7 @@
                     <h2>Last 24 Hours</h2>
                     <ol>
                         {{#each last24HoursEntries}}
-                        <li>{{@index}}. {{this.name}} - Score: {{this.score}}</li>
+                        <li>{{inc @index}}. {{this.name}} - Score: {{this.score}}</li>
                         {{/each}}
                     </ol>
                 </div>

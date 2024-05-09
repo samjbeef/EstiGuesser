@@ -33,8 +33,10 @@
             <form action="/check-guess" method="POST">
                 <input type="hidden" name="targetNumber" value="{{targetNumber}}">
                 <p>Enter your Estimate Below!</p>
+                {{#unless showPlayAgain}}
                 <input type="number" name="userInput" />
                 <input type="submit" value="Submit">
+                {{/unless}}
             </form>
         </center>
         <center>
@@ -48,8 +50,9 @@
         <center>
             <!-- Conditionally show the "Play Again" button -->
             {{#if showPlayAgain}}
-            <form action="/?reset=true" method="GET">
-                <input type="submit" value="Play Again" onclick="redirectToHome(event)">
+            {{!-- <form action="/?reset=true" method="GET"> --}}
+                <a class="btn btn-success" href="play" role="button">Play</a><br>
+                <a class="btn btn-success btn-sm" href="leaderboard" role="button">Leaderboard</a>
             </form>
             {{/if}}
         </center>
@@ -72,7 +75,7 @@
         function redirectToHome(event) {
             //redirect to home page when button is clicked    
             event.preventDefault
-            window.location.href = "/";
+            window.location.href = "/play";
         }
     </script>
 </body>
