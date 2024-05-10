@@ -1,35 +1,33 @@
-const { Pool } = require('pg');
+const { Pool } = require('pg')
 const { createSSHTunnel } = require('./sshTunnel.js');
 
-// Create a single Pool instance
-const pool = new Pool({
-    user: process.env.RDS_DATABASE_User,
-    host: process.env.RDS_DATABASE_Host,
-    database: process.env.RDS_DATABASE,
-    password: process.env.RDS_DATABASE_Password,
-    port: process.env.RDS_DATABASE_Port,
-});
-
-pool.on('error', (err) => {
-    console.error('Unexpected error on idle client', err);
-    process.exit(-1);
-});
 
 async function startConnection() {
-    if (process.env.NODE_ENV === 'LOCALPROD') {
-        let { srcAddr, srcPort } = await createSSHTunnel();
-        // Override host and port if using SSH tunnel
-        pool.options.host = srcAddr;
-        pool.options.port = srcPort;
+    let { srcAddr, srcPort } = {
+        srcAddr: process.env.RDS_DATABASE_Host,
+        srcPort: process.env.RDS_DATABASE_Port,
     }
-    try {
-        const client = await pool.connect();
-        console.log('Connected to database!');
-        return client;
-    } catch (err) {
-        console.error('Error connecting to database:', err);
-        throw err;
+    if (process.env.NODE_ENV == 'LOCALPROD') {
+        let response = await createSSHTunnel()
+        srcAddr = response.srcAddr;
+        srcPort = response.srcPort;
     }
+    const client = new Pool({
+        user: process.env.RDS_DATABASE_User,
+        host: srcAddr,
+        database: process.env.RDS_DATABASE,
+        password: process.env.RDS_DATABASE_Password,
+        port: srcPort,
+    })
+    client.on('error', (err => {
+        console.log(err);
+    }))
+    client.connect(function (err) {
+        if (err)
+            console.log(err);
+        console.log("Connected!");
+    });
+    return client;
 }
-
 module.exports = { startConnection };
+

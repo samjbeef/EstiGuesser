@@ -85,13 +85,10 @@ async function getLeaderboardData(timeRange, limit, orderBy) {
         } else {
             throw new Error('Invalid time range specified');
         }
-        // console.log(query);
         const result = await client.query(query);
         return result.rows;
     } finally {
-        if (client) {
-            client.release();
-        }
+        client.end();
     }
 }
 
@@ -187,7 +184,7 @@ const fetchRealEstateData = async (request, randomAddress) => {
                 } catch (error) {
                     console.error('Error removing property from properties table:', error);
                 } finally {
-                    client.release();
+                    await client.end();
                 }
             }
         });
@@ -270,7 +267,7 @@ app.post('/check-guess', async (request, response) => {
         console.error('Error retrieving the target number from the database:', error);
         response.status(500).send('Internal Server Error');
     } finally {
-        client.release();
+        await client.end();
     }
 });
 
@@ -510,7 +507,7 @@ app.post('/login', async (request, response) => {
         response.status(500).send('Internal Server Error');
     }
     finally {
-        client.release;
+        client.end;
     }
 });
 
