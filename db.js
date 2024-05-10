@@ -30,6 +30,33 @@ async function startConnection() {
         console.error('Error connecting to database:', err);
         throw err;
     }
+    async function closeConnection(client) {
+        try {
+            await client.release();
+            console.log('Database client released back to pool');
+        } catch (err) {
+            console.error('Error releasing database client:', err);
+            throw err;
+        }
+    }
+    async function closeConnection(client) {
+        try {
+            await client.release();
+            console.log('Database client released back to pool');
+        } catch (err) {
+            console.error('Error releasing database client:', err);
+            throw err;
+        }
+    }
+}
+async function closeConnection(client) {
+    try {
+        await client.release();
+        console.log('Database client released back to pool');
+    } catch (err) {
+        console.error('Error releasing database client:', err);
+        throw err;
+    }
 }
 
-module.exports = { startConnection };
+module.exports = { startConnection, closeConnection };
