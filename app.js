@@ -88,7 +88,7 @@ async function getLeaderboardData(timeRange, limit, orderBy) {
         const result = await client.query(query);
         return result.rows;
     } finally {
-        client.end();
+        client.rele();
     }
 }
 
