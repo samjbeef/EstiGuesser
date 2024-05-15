@@ -15,7 +15,7 @@ const { stringify, escape } = require('querystring');
 const { request } = require('http');
 var requestIp = require('request-ip');
 const { Pool } = require('pg');
-const { startConnection, closeConnection } = require('./db')
+const { startConnection } = require('./db')
 const { createSSHTunnel } = require('./sshTunnel');
 const session = require('express-session');
 const Filter = require('bad-words');
@@ -85,11 +85,10 @@ async function getLeaderboardData(timeRange, limit, orderBy) {
         } else {
             throw new Error('Invalid time range specified');
         }
-        // console.log(query);
         const result = await client.query(query);
         return result.rows;
     } finally {
-        await closeConnection(client);
+        client.rele();
     }
 }
 
@@ -107,6 +106,7 @@ app.get('/leaderboard', async (request, response) => {
         console.error('Error fetching leaderboard data:', error);
         response.status(500).send('Internal Server Error');
     }
+
 });
 
 
@@ -184,7 +184,7 @@ const fetchRealEstateData = async (request, randomAddress) => {
                 } catch (error) {
                     console.error('Error removing property from properties table:', error);
                 } finally {
-                    await closeConnection(client);
+                    await client.end();
                 }
             }
         });
@@ -267,7 +267,7 @@ app.post('/check-guess', async (request, response) => {
         console.error('Error retrieving the target number from the database:', error);
         response.status(500).send('Internal Server Error');
     } finally {
-        await closeConnection(client);
+        await client.end();
     }
 });
 
@@ -507,7 +507,7 @@ app.post('/login', async (request, response) => {
         response.status(500).send('Internal Server Error');
     }
     finally {
-        await closeConnection(client);
+        client.end;
     }
 });
 
