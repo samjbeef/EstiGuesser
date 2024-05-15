@@ -67,7 +67,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 let dbCon
 
 async function getDBcon() {
-    dbCon = await startConnection();
+    if (!dbCon) {
+        dbCon = await startConnection();
+    }
     return dbCon;
 }
 
