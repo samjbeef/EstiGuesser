@@ -16,6 +16,7 @@ const { request } = require('http');
 var requestIp = require('request-ip');
 const { Pool } = require('pg');
 const { startConnection } = require('./db')
+const PostgresConnectionManager = require('./db2');
 const { createSSHTunnel } = require('./sshTunnel');
 const session = require('express-session');
 const Filter = require('bad-words');
@@ -63,19 +64,19 @@ app.set('view engine', 'hbs');
 app.use(bodyParser.urlencoded({ extended: true }));
 
 
+let dbCon = new PostgresConnectionManager()
+// let dbCon
 
-let dbCon
-
-async function getDBcon() {
-    if (!dbCon) {
-        dbCon = await startConnection();
-    }
-    return dbCon;
-}
+// async function getDBcon() {
+//     if (!dbCon) {
+//         dbCon = await startConnection();
+//     }
+//     return dbCon;
+// }
 
 async function getLeaderboardData(timeRange, limit, orderBy) {
     //const dbCon = await pool.connect();
-    const client = await getDBcon();
+    // const client = await getDBcon();
     try {
         let query;
         if (timeRange === 'last24Hours') {
@@ -87,10 +88,10 @@ async function getLeaderboardData(timeRange, limit, orderBy) {
         } else {
             throw new Error('Invalid time range specified');
         }
-        const result = await client.query(query);
+        const result = await dbCon.query(query);
         return result.rows;
     } finally {
-        client.end();
+        // client.end();
     }
 }
 
@@ -135,8 +136,8 @@ const fetchRandomAddress = async (request) => {
         console.log("fetchRandomAddr:  " + request.session.id);
 
         // Execute the SQL query to select a random address
-        const client = await getDBcon();
-        const result = await client.query('SELECT address FROM properties ORDER BY RANDOM() LIMIT 1;');
+        // const client = await getDBcon();
+        const result = await dbCon.query('SELECT address FROM properties ORDER BY RANDOM() LIMIT 1;');
         // Extract the random address from the query result
         let randomAddress = result.rows[0].address;
         // Trim single quotes from the address string
@@ -179,14 +180,14 @@ const fetchRealEstateData = async (request, randomAddress) => {
             if (price > 0 || photos.length > 15 || homeType === 'SINGLE_FAMILY') {
                 request.session.addressDetails = { photos, address, price, yearBuilt };
             } else {
-                const client = await getDBcon();
+                // const client = await getDBcon();
                 try {
-                    await client.query('DELETE FROM properties WHERE address = $1', [randomAddress]);
+                    await dbCon.query('DELETE FROM properties WHERE address = $1', [randomAddress]);
                     console.log(`Property with address '${randomAddress}' removed from properties table.`);
                 } catch (error) {
                     console.error('Error removing property from properties table:', error);
                 } finally {
-                    await client.end();
+                    // await client.end();
                 }
             }
         });
@@ -200,7 +201,7 @@ const fetchRealEstateData = async (request, randomAddress) => {
 app.post('/check-guess', async (request, response) => {
     const userid = request.session.id;
     const userGuess = parseInt(request.body.userInput);
-    const client = await getDBcon();
+    // const client = await getDBcon();
     const { address, price, yearBuilt, photos } = request.session.addressDetails || {};
     console.log('in the post: ', request.session.addressDetails)
 
@@ -222,7 +223,7 @@ app.post('/check-guess', async (request, response) => {
             bestScore = calculateScore(userGuess, price);
             // const currentTime = new Date().toISOString();
             const currentTime = new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' });
-            await client.query(`
+            await dbCon.query(`
                 INSERT INTO leaderboard (name, score, timeplayed)
                 VALUES ($1, $2, $3)
             `, [username, bestScore, currentTime]);
@@ -251,7 +252,7 @@ app.post('/check-guess', async (request, response) => {
                 const username = request.session.username;
                 bestScore = calculateScore(userGuess, price);
                 const currentTime = new Date().toISOString();
-                await client.query(`
+                await dbCon.query(`
                     INSERT INTO leaderboard (name, score, timeplayed)
                     VALUES ($1, $2, $3)
                 `, [username, bestScore, currentTime]);
@@ -269,7 +270,7 @@ app.post('/check-guess', async (request, response) => {
         console.error('Error retrieving the target number from the database:', error);
         response.status(500).send('Internal Server Error');
     } finally {
-        await client.end();
+        // await client.end();
     }
 });
 
@@ -483,13 +484,13 @@ app.get('/signin', (request, response) => {
 
 app.post('/login', async (request, response) => {
     const { username } = request.body;
-    const client = await getDBcon();
+    // const client = await getDBcon();
     console.log(username);
 
 
     try {
         // Check if the username already exists in the database
-        const { rows } = await client.query('SELECT * FROM users WHERE username = $1', [username]);
+        const { rows } = await dbCon.query('SELECT * FROM users WHERE username = $1', [username]);
 
         if (rows.length > 0) {
             return response.render('./layouts/signin.hbs', { errorMessage: 'Username is already taken. Please try again.' });
@@ -500,7 +501,7 @@ app.post('/login', async (request, response) => {
             }
 
             // If the username is unique and does not contain any bad words, store it in the database
-            await client.query('INSERT INTO users (username) VALUES ($1)', [username]);
+            await dbCon.query('INSERT INTO users (username) VALUES ($1)', [username]);
             request.session.username = username; // Store the username in the session
             response.redirect('/play'); // Redirect to the dashboard or any other page
         }
@@ -509,7 +510,7 @@ app.post('/login', async (request, response) => {
         response.status(500).send('Internal Server Error');
     }
     finally {
-        client.end;
+        // client.end;
     }
 });
 
