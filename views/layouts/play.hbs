@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Bootstrap demo</title>
+    <title>Play</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
     <link rel="stylesheet" href="play.css">
@@ -30,14 +30,14 @@
         </center>
 
         <center class="estimate">
-            <form action="/check-guess" method="POST">
+            {{!-- <form action="/check-guess" method="POST">
                 <input type="hidden" name="targetNumber" value="{{targetNumber}}">
                 <p>Enter your Estimate Below!</p>
-                {{#unless showPlayAgain}}
+
                 <input type="number" name="userInput" />
                 <input type="submit" value="Submit">
-                {{/unless}}
-            </form>
+
+            </form> --}}
         </center>
         <center>
             <p>{{message}}</p>
@@ -48,13 +48,21 @@
         </center>
 
         <center>
-            <!-- Conditionally show the "Play Again" button -->
-            {{#if showPlayAgain}}
-            {{!-- <form action="/?reset=true" method="GET"> --}}
-                <a class="btn btn-success" href="play" role="button">Play</a><br>
-                <a class="btn btn-success btn-sm" href="leaderboard" role="button">Leaderboard</a>
-            </form>
-            {{/if}}
+            <center>
+                {{#if showPlayAgain}}
+                <!-- Changes: The Play Again and Leaderboard buttons are only shown when showPlayAgain is true -->
+                <a class="btn btn-success" href="/play-again" role="button">Play Again</a><br>
+                <a class="btn btn-success btn-sm" href="/leaderboard" role="button">Leaderboard</a>
+                {{else}}
+                <!-- Changes: The form is shown only when showPlayAgain is false -->
+                <form action="/check-guess" method="POST">
+                    <input type="hidden" name="targetNumber" value="{{targetNumber}}">
+                    <p>Enter your Estimate Below!</p>
+                    <input type="number" name="userInput" />
+                    <input type="submit" value="Submit">
+                </form>
+                {{/if}}
+            </center>
         </center>
     </div>
 
