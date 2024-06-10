@@ -149,6 +149,39 @@ const fetchRandomAddress = async (request) => {
     }
 };
 
+async function moveToInactiveProperties(dbCon, propertyId) {
+    try {
+        await dbCon.query('BEGIN');
+
+        await dbCon.query(`
+        CREATE TABLE IF NOT EXISTS inactiveProperties (
+            id SERIAL PRIMARY KEY,
+            streetAddress TEXT,
+            city TEXT,
+            state TEXT,
+            yearBuilt INT,
+            otherColumns TEXT,
+            CONSTRAINT unique_property UNIQUE (streetAddress, city, state)
+        );
+    `);
+        // Move the property to inactiveProperties table
+        const moveQuery = `
+            INSERT INTO inactiveProperties (streetAddress, city, state, yearBuilt, otherColumns)
+            SELECT streetAddress, city, state, yearBuilt, otherColumns
+            FROM properties
+            WHERE id = $1
+            ON CONFLICT (streetAddress, city, state) DO NOTHING;
+        `;
+        await dbCon.query(moveQuery, [propertyId]);
+
+        await dbCon.query('COMMIT');
+    } catch (error) {
+        await dbCon.query('ROLLBACK');
+        throw error;
+    }
+}
+
+
 
 
 const fetchRealEstateData = async (request, randomAddress) => {
@@ -182,12 +215,10 @@ const fetchRealEstateData = async (request, randomAddress) => {
             } else {
                 // const client = await getDBcon();
                 try {
-                    await dbCon.query('DELETE FROM properties WHERE address = $1', [randomAddress]);
-                    console.log(`Property with address '${randomAddress}' removed from properties table.`);
+                    await moveToInactiveProperties(request.session.propertyId);
+                    console.log(`Property with address '${randomAddress}' moved to inactiveProperties table.`);
                 } catch (error) {
-                    console.error('Error removing property from properties table:', error);
-                } finally {
-                    // await client.end();
+                    console.error('Error moving property to inactiveProperties table:', error);
                 }
             }
         });
@@ -325,7 +356,6 @@ app.get('/play', async (request, response) => {
                 bestScore = score;
             }
             request.session.showPlayAgain = true;
-            // console.log("BRENT request.session.showPlayAgain=", request.session.showPlayAgain);
             return response.render('./layouts/play.hbs', {
                 message: `The correct price was ${formattedCorrectGuess}. Your score is ${bestScore}.`,
                 remainingChancesEqualsZero,
