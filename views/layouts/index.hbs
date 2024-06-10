@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bootstrap demo</title>
+    <title>EstiGuessr</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
     <link rel="stylesheet" href="style.css">
@@ -16,16 +16,16 @@
             <h1 class="display-4">
                 <center>EstiGuessr</center>
             </h1>
-            <h1 class="display-4">
-                <Center>You will try to guess the home price of the property listed, the closer you
-                    are, the more points
-                    you get.</Center>
+            <h1 class="display-5">
+                <center>The real estate guessing game!</center>
             </h1>
             <hr class="my-4">
             <center>
                 <p class="lead">
                     <a class="btn btn-primary btn-lg" href="play" role="button">Play</a><br>
-                    <a class="btn btn-primary btn-lg" href="leaderboard" role="button">Leaderboard</a>
+                    <a class="btn btn-primary btn-lg" href="leaderboard" role="button">Leaderboard</a><br>
+                    <a class="btn btn-primary btn-lg" data-bs-toggle="modal" role="button"
+                        data-bs-target="#instructionsModal">Instructions</a>
                 </p>
             </center>
         </div>
@@ -34,5 +34,23 @@
         integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2"
         crossorigin="anonymous"></script>
 </body>
+<div class="modal fade" id="instructionsModal" tabindex="-1" aria-labelledby="instructionsModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="instructionsModalLabel">EstiGuessr Instructions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>You will try to guess the home price of the property listed, the closer you are, the more points you
+                    get.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 </html>

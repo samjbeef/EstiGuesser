@@ -225,12 +225,15 @@ app.post('/check-guess', async (request, response) => {
 
             request.session.message = message;
             request.session.showPlayAgain = true;
+            console.log("4correctGuess (going to /play) request.session.showPlayAgain=", request.session.showPlayAgain);
 
+            request.session.correctGuess = true;
         } else {
             request.session.remainingChances--;
+            request.session.correctGuess = false;
 
             if (request.session.remainingChances === 0) {
-                message = 'You are out of chances. Game over!';
+                // message = 'You are out of chances. Game over!';
                 const username = request.session.username;
                 bestScore = calculateScore(userGuess, price);
                 const currentTime = new Date().toISOString();
@@ -274,108 +277,22 @@ app.get('/', async (request, response) => {
         console.error(error);
         response.status(500).send('Internal Server Error');
     }
-    // try {
-    //     console.log("root:  " + request.session.id);
-
-    //     request.session.remainingChances = 3;
-    //     targetNumber = undefined;
-
-    //     // Get a random zpid from the array
-    //     const randomAddress = await fetchRandomAddress(request);
-
-    //     // Fetch real estate data
-    //     await fetchRealEstateData(request, randomAddress);
-
-    //     response.render('./layouts/index.hbs', {
-    //         address: request.session.addressDetails.address,
-    //         price: request.session.addressDetails.price,
-    //         yearBuilt: request.session.addressDetails.yearBuilt,
-    //         photos: request.session.addressDetails.photos
-    //     });
-    // } catch (error) {
-    //     console.error(error);
-    //     response.status(500).send('Internal Server Error');
-    // }
 });
 app.get('/leaderboard', async (request, response) => {
     response.render('./layouts/leaderboard.hbs', {
     });
 })
 
-// app.get('/play', async (request, response) => {
-//     console.log()
-//     try {
-//         // Check if the user is logged in
-//         if (!request.session.username) {
-//             // Redirect user to the login page if not logged in
-//             return response.redirect('/signin');
-//         }
+app.get('/play-again', (request, response) => {
+    request.session.showPlayAgain = false; // Reset showPlayAgain
+    request.session.remainingChances = maxChances; // Reset remaining chances
+    request.session.addressDetails = null; // Reset address details
+    request.session.message = ''; // Clear any previous messages
+    request.session.correctGuess = false; // Reset correctGuess
+    response.redirect('/play'); // Redirect to /play to start a new game
+});
 
-//         // // Reset game state
-//         // request.session.remainingChances = 3;
-//         // targetNumber = undefined;
-
-//         // Get a random address
-//         if (typeof request.session.addressDetails === 'undefined' || request.session.addressDetails === null) {
-//             // If addressDetails is undefined, fetch a random address and real estate data
-//             const randomAddress = await fetchRandomAddress(request);
-//             await fetchRealEstateData(request, randomAddress);
-//             request.session.remainingChances = 3;
-//             targetNumber = undefined;
-//         }
-//         // Retrieve data from session
-//         const { address, price, yearBuilt, photos } = request.session.addressDetails || {};
-//         const message = request.query.message || ''; // Retrieve the message from the query parameter    
-//         const user_input = request.query.user_input;
-//         const remainingChancesEqualsZero = request.session.remainingChances === undefined || request.session.remainingChances === 0;
-//         // }
-
-//         // Check if remaining chances are zero
-//         if (remainingChancesEqualsZero) {
-//             request.session.addressDetails = null;
-//             // Display the correct guess message here
-//             const correctGuess = targetNumber || 0; // Get the correct guess from targetNumber
-//             const formattedCorrectGuess = correctGuess.toLocaleString('en-US', {
-//                 style: 'currency',
-//                 currency: 'USD',
-//             });
-
-//             // Calculate score
-//             const score = calculateScore(user_input, correctGuess);
-
-//             // Update the best score if the current score is higher
-//             if (score > bestScore) {
-//                 bestScore = score;
-//             }
-//             return response.render('./layouts/play.hbs', {
-//                 message: `The correct price was ${formattedCorrectGuess}. Your score is ${bestScore}.`,
-//                 remainingChancesEqualsZero,
-//                 showPlayAgain: true,
-//                 bestScore,
-//                 address,
-//                 price,
-//                 yearBuilt,
-//                 photos
-//             });
-
-//         } else {
-//             // Display the regular game interface with the message
-//             return response.render('./layouts/play.hbs', {
-//                 message,
-//                 remainingChancesEqualsZero,
-//                 address,
-//                 price,
-//                 yearBuilt,
-//                 photos
-//             });
-//         }
-//     } catch (error) {
-//         console.error(error);
-//         return response.status(500).send('Internal Server Error');
-//     }
-// });
 app.get('/play', async (request, response) => {
-    console.log();
     try {
         if (!request.session.username) {
             return response.redirect('/signin');
@@ -392,8 +309,10 @@ app.get('/play', async (request, response) => {
         const message = request.session.message || ''; // Retrieve the message from the session variable
         const user_input = request.session.userGuess;
         const remainingChancesEqualsZero = request.session.remainingChances === undefined || request.session.remainingChances === 0;
+        const showPlayAgain = request.session.showPlayAgain || false;
+        const correctGuess = user_input === price;
 
-        if (remainingChancesEqualsZero) {
+        if (remainingChancesEqualsZero && !correctGuess) {
             request.session.addressDetails = null;
             const correctGuess = targetNumber || 0;
             const formattedCorrectGuess = correctGuess.toLocaleString('en-US', {
@@ -405,6 +324,8 @@ app.get('/play', async (request, response) => {
             if (score > bestScore) {
                 bestScore = score;
             }
+            request.session.showPlayAgain = true;
+            // console.log("BRENT request.session.showPlayAgain=", request.session.showPlayAgain);
             return response.render('./layouts/play.hbs', {
                 message: `The correct price was ${formattedCorrectGuess}. Your score is ${bestScore}.`,
                 remainingChancesEqualsZero,
@@ -416,10 +337,37 @@ app.get('/play', async (request, response) => {
                 photos
             });
 
-        } else {
+        }
+        else if (request.session.correctGuess) {
+            // Here you need to reset the game play variables, and get a new address....then render /play.
+            request.session.addressDetails = null;
+
+            const randomAddress = await fetchRandomAddress(request);
+            await fetchRealEstateData(request, randomAddress);
+            request.session.remainingChances = 3;
+            targetNumber = undefined;
+            request.session.showPlayAgain = false;
+
+
+
+            return response.render('./layouts/play.hbs', {
+                message,
+                correctGuess: true,
+                showPlayAgain,
+                address,
+                price,
+                yearBuilt,
+                photos
+            });
+            request.session.showPlayAgain = false;
+        }
+        else {
+            console.log("3BRENT request.session.showPlayAgain=", request.session.showPlayAgain);
+
             return response.render('./layouts/play.hbs', {
                 message,
                 remainingChancesEqualsZero,
+                showPlayAgain,
                 address,
                 price,
                 yearBuilt,
@@ -521,39 +469,70 @@ app.listen(port, () => {
 // Route for the sign-in page
 app.get('/signin', (request, response) => {
 
+    request.session.showPlayAgain = false;
+
     response.render('./layouts/signin.hbs');
 });
 
 
+// app.post('/login', async (request, response) => {
+//     const { username } = request.body;
+//     // const client = await getDBcon();
+//     console.log(username);
+
+
+//     try {
+//         // Check if the username already exists in the database
+//         const { rows } = await dbCon.query('SELECT * FROM users WHERE username = $1', [username]);
+
+//         if (rows.length > 0) {
+//             return response.render('./layouts/signin.hbs', { errorMessage: 'Username is already taken. Please try again.' });
+//         } else {
+//             // Check if the username contains any bad words
+//             if (filter.isProfane(username)) {
+//                 return response.render('./layouts/signin.hbs', { errorMessage: 'Username contains inappropriate language. Please try again.' });
+//             }
+
+//             // If the username is unique and does not contain any bad words, store it in the database
+//             await dbCon.query('INSERT INTO users (username) VALUES ($1)', [username]);
+//             request.session.username = username; // Store the username in the session
+//             response.redirect('/play'); // Redirect to the dashboard or any other page
+//         }
+//     } catch (error) {
+//         console.error('Error during sign-in:', error);
+//         response.status(500).send('Internal Server Error');
+//     }
+//     finally {
+//         // client.end;
+//     }
+// });
+
 app.post('/login', async (request, response) => {
     const { username } = request.body;
-    // const client = await getDBcon();
-    console.log(username);
-
 
     try {
+        // Check if the username contains any bad words
+        if (filter.isProfane(username)) {
+            return response.render('layouts/signin.hbs', { errorMessage: 'Username contains inappropriate language. Please try again.' });
+        }
+
         // Check if the username already exists in the database
         const { rows } = await dbCon.query('SELECT * FROM users WHERE username = $1', [username]);
 
         if (rows.length > 0) {
-            return response.render('./layouts/signin.hbs', { errorMessage: 'Username is already taken. Please try again.' });
+            // User exists, log them in
+            request.session.username = username; // Store the username in the session
+            response.redirect('/play'); // Redirect to the play page
         } else {
-            // Check if the username contains any bad words
-            if (filter.isProfane(username)) {
-                return response.render('./layouts/signin.hbs', { errorMessage: 'Username contains inappropriate language. Please try again.' });
-            }
-
-            // If the username is unique and does not contain any bad words, store it in the database
+            // User does not exist, create a new user
             await dbCon.query('INSERT INTO users (username) VALUES ($1)', [username]);
             request.session.username = username; // Store the username in the session
-            response.redirect('/play'); // Redirect to the dashboard or any other page
+            response.redirect('/play'); // Redirect to the play page
         }
     } catch (error) {
         console.error('Error during sign-in:', error);
         response.status(500).send('Internal Server Error');
     }
-    finally {
-        // client.end;
-    }
 });
+
 

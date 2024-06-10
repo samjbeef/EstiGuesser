@@ -12,6 +12,11 @@ body {
     padding-top: 20px;
 }
 
+.lead {
+    color: #ee4141;
+    padding: 15px;
+}
+
 .jumbotron {
     background-color: #ee4141;
     /* White background */
