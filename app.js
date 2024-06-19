@@ -23,6 +23,8 @@ const Filter = require('bad-words');
 const filter = new Filter();
 const throttledQueue = require('throttled-queue');
 const throttle = throttledQueue(3, 1000);
+const fs = require('fs');
+const counterFilePath = path.join(__dirname, 'sessionCounter.txt');
 
 app.use(session({
     secret: 'samkey', // Change this to a random string
@@ -73,6 +75,34 @@ let dbCon = new PostgresConnectionManager()
 //     }
 //     return dbCon;
 // }
+const incrementSessionCounter = () => {
+    fs.readFile(counterFilePath, 'utf8', (err, data) => {
+        if (err) {
+            console.error('Error reading session counter file:', err);
+            return;
+        }
+        let count = parseInt(data, 10);
+        count += 1;
+        fs.writeFile(counterFilePath, count.toString(), (err) => {
+            if (err) {
+                console.error('Error writing to session counter file:', err);
+            }
+        });
+    });
+};
+
+app.use((req, res, next) => {
+    if (!req.session.isInitialized) {
+        incrementSessionCounter();
+        req.session.isInitialized = true;
+        fs.readFile(counterFilePath, 'utf8', (err, data) => {
+            if (!err) {
+                console.log(`New session created. Total sessions: ${data}`);
+            }
+        });
+    }
+    next();
+});
 
 async function getLeaderboardData(timeRange, limit, orderBy) {
     //const dbCon = await pool.connect();
@@ -200,6 +230,15 @@ const fetchRealEstateData = async (request, randomAddress) => {
             };
 
             const response = await axios.request(options);
+            // console.log(response);
+            const apiCallsRemaining = response.headers['x-ratelimit-requests-remaining'];
+
+            // Check if remaining API calls are less than 100
+            if (apiCallsRemaining < 100) {
+                console.error('API calls remaining are less than 100. Stopping the application.');
+                process.exit(1); // Exit the process with a non-zero exit code
+            }
+
             const propertyDetails = response.data.propertyDetails;
 
             const homeType = propertyDetails.homeType;
@@ -207,11 +246,15 @@ const fetchRealEstateData = async (request, randomAddress) => {
             const price = propertyDetails.price;
             const yearBuilt = propertyDetails.yearBuilt;
             const photos = propertyDetails.originalPhotos || [];
+            const beds = response.data.propertyDetails.bedrooms;
+            const baths = response.data.propertyDetails.bathrooms;
+            const sqft = response.data.propertyDetails.livingArea;
+            console.log(baths, sqft, beds);
 
-            request.session.addressDetails = { photos, address, price, yearBuilt, homeType };
+            request.session.addressDetails = { photos, address, price, yearBuilt, homeType, beds, baths, sqft };
             console.log(address);
             if (price > 0 || photos.length > 15 || homeType === 'SINGLE_FAMILY') {
-                request.session.addressDetails = { photos, address, price, yearBuilt };
+                request.session.addressDetails = { photos, address, price, yearBuilt, beds, baths, sqft };
             } else {
                 // const client = await getDBcon();
                 try {
@@ -228,12 +271,23 @@ const fetchRealEstateData = async (request, randomAddress) => {
     }
 };
 
+app.get('/session-count', (req, res) => {
+    fs.readFile(counterFilePath, 'utf8', (err, data) => {
+        if (err) {
+            console.error('Error reading session counter file:', err);
+            res.status(500).send('Error reading session counter');
+            return;
+        }
+        res.send(`Total sessions: ${data}`);
+    });
+});
+
 
 // 
 app.post('/check-guess', async (request, response) => {
     const userid = request.session.id;
     const userGuess = parseInt(request.body.userInput);
-    const { address, price, yearBuilt, photos } = request.session.addressDetails || {};
+    const { address, price, yearBuilt, photos, beds, baths, sqft } = request.session.addressDetails || {};
     console.log('in the post: ', request.session.addressDetails);
 
     try {
@@ -336,7 +390,7 @@ app.get('/play', async (request, response) => {
             targetNumber = undefined;
         }
 
-        const { address, price, yearBuilt, photos } = request.session.addressDetails || {};
+        const { address, price, yearBuilt, photos, beds, baths, sqft } = request.session.addressDetails || {};
         const message = request.session.message || ''; // Retrieve the message from the session variable
         const user_input = request.session.userGuess;
         const remainingChancesEqualsZero = request.session.remainingChances === undefined || request.session.remainingChances === 0;
@@ -364,7 +418,10 @@ app.get('/play', async (request, response) => {
                 address,
                 price,
                 yearBuilt,
-                photos
+                photos,
+                beds,
+                baths,
+                sqft
             });
 
         }
@@ -387,7 +444,10 @@ app.get('/play', async (request, response) => {
                 address,
                 price,
                 yearBuilt,
-                photos
+                photos,
+                beds,
+                baths,
+                sqft
             });
             request.session.showPlayAgain = false;
         }
@@ -401,7 +461,10 @@ app.get('/play', async (request, response) => {
                 address,
                 price,
                 yearBuilt,
-                photos
+                photos,
+                beds,
+                baths,
+                sqft
             });
         }
     } catch (error) {
