@@ -111,10 +111,17 @@ async function getLeaderboardData(timeRange, limit, orderBy) {
         let query;
         if (timeRange === 'last24Hours') {
             // Fetch top N entries for the last 24 hours based on date_played
-            query = `SELECT name, score, timeplayed FROM leaderboard WHERE timeplayed >= NOW() - interval '24 hours' ORDER BY ${orderBy} DESC LIMIT 10`;
+            query = `SELECT name, score, timeplayed FROM leaderboard 
+                     WHERE timeplayed >= NOW() - interval '24 hours' 
+                     AND score IS NOT NULL AND score::text ~ '^[0-9]+(\\.[0-9]+)?$'
+                     ORDER BY ${orderBy} DESC 
+                     LIMIT 10`;
         } else if (timeRange === 'allTime') {
             // Fetch top N entries all time based on your sorting logic
-            query = `SELECT name, score, timeplayed FROM leaderboard ORDER BY ${orderBy} DESC LIMIT 25`;
+            query = `SELECT name, score, timeplayed FROM leaderboard 
+                     WHERE score IS NOT NULL AND score::text ~ '^[0-9]+(\\.[0-9]+)?$'
+                     ORDER BY ${orderBy} DESC 
+                     LIMIT 25`;
         } else {
             throw new Error('Invalid time range specified');
         }
@@ -547,11 +554,17 @@ app.get('/play', async (request, response) => {
 //     }
 // });
 
+// function calculateScore(userGuess, actualPrice) {
+//     const priceDifference = Math.abs(actualPrice - userGuess);
+//     const score = Math.round(Math.max(0, 100 - (priceDifference / actualPrice) * 100));
+//     return score;
+// }
 function calculateScore(userGuess, actualPrice) {
     const priceDifference = Math.abs(actualPrice - userGuess);
-    const score = Math.round(Math.max(0, 100 - (priceDifference / actualPrice) * 100));
+    const score = Math.round(Math.max(0, 1000 - (priceDifference / actualPrice) * 1000));
     return score;
 }
+
 
 app.listen(port, () => {
     console.log("app listening on port 3000");
